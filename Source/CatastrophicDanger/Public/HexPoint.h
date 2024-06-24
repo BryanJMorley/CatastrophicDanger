@@ -8,40 +8,107 @@
 
 
 USTRUCT(BlueprintType)
-struct FHexPoint : public FIntPoint {
+struct FHexPoint : public FIntVector {
 	
 	GENERATED_BODY()
 
 public: 
-	using FIntPoint::FIntPoint;
+	using FIntVector::FIntVector;
 
-	FHexPoint(const FIntPoint &Point) {
+	FHexPoint(const FIntVector& Point) {
+			X = Point.X;
+			Y = Point.Y;
+			Z = Point.Z;
+	}
+
+	FHexPoint(int Q, int R, int S) {
+		X = Q;
+		Y = R;
+		Z = S;
+	}
+
+	FHexPoint(const FIntPoint& Point) {
+		X = Point.X;
+		Y = Point.Y - (X - (X & 1)) / 2;
+		Z = -X-Y;
+	}
+
+	FHexPoint(int Q, int R) {
+		X = Q;
+		Y = R - (Q - (Q & 1)) / 2;
+		Z = -X - Y;
+	}
+
+	FHexPoint(const FHexPoint& Point) {
 		X = Point.X;
 		Y = Point.Y;
+		Z = Point.Z;
+	}
+	
+	void operator = (FVector V) {
+		X = V.X;
+		Y = V.Y;
+		Z = V.Z;
 	}
 
-	int const Q() {
-		return X;
+	void operator = (FIntVector V) {
+		X = V.X;
+		Y = V.Y;
+		Z = V.Z;
 	}
 
-	int const R() {
-		return (Y - (X - (X & 1)) / 2);
+	inline FIntPoint ToOffset() {
+		return { X, Y + (X - (X&1)) / 2};
 	}
 
-	int const S() {
-		return (-X - Y - (X - (X & 1)) / 2);
+	inline FIntPoint ToOffset(FHexPoint inH) {
+		return { inH.X, inH.Y + (inH.X - (inH.X & 1)) / 2 };
 	}
 
-	FHexPoint  QR() const {
-		return { X , (Y - (X - (X & 1)) / 2) };
-	}
-
-	FIntVector3  QRS() const {
-		int r = (Y - (X - (X & 1)));
-		return { X , r, -X-r };
-	}
 };
 
+USTRUCT(BlueprintType)
+struct FHexFrac : public FVector {
+
+	GENERATED_BODY()
+
+public:
+	using FVector::FVector;
+
+	FHexFrac(const FVector& Point) {
+		X = Point.X;
+		Y = Point.Y;
+		Z = -X - Y;
+	}
+
+	FHexFrac(double Q, double R, double S) {
+		X = Q;
+		Y = R;
+		Z = S;
+	}
+
+	FHexFrac(const FVector2D& Point) {
+		X = Point.X;
+		Y = Point.Y;
+		Z = -X - Y;
+	}
+
+	FHexFrac(const FHexFrac& Point) {
+		X = Point.X;
+		Y = Point.Y;
+		Z = Point.Z;
+	}
+
+	FHexFrac(const FHexPoint& Point) {
+		X = Point.X;
+		Y = Point.Y;
+		Z = Point.Z;
+	}
+
+	inline const FVector2D ToOffset() {
+		return { X, Y = (Y - (X - (int(X) & 1)) / 2.0)};
+	}
+};
 
 /*
 UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Coord Conversion")

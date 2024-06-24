@@ -97,7 +97,7 @@ struct FTileData {
 	FFireData fireData;
 
 	FTileData() {
-		tileCoords = { -1, -1 };
+		tileCoords = FHexPoint{ -1,-1,-1 };
 		tile = nullptr;
 		terrainData;
 		fireData;

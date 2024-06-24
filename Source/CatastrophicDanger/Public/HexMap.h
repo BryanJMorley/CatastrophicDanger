@@ -23,19 +23,22 @@ public:
 	
 	//Map Properties
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
-	uint8 width;
+	int width;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
-	uint8 height;
+	int height;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
 	float tileSize;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Map Properties")
-	TSubclassOf<AHexTile> tileClass;
+	TSubclassOf<AHexTile> tileClass = nullptr;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Map Data")
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
 	TArray<FTileData> tilesAll;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
+	TArray<FTransform> tileTransforms;
 
 	AHexMap();
 
@@ -48,22 +51,26 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
+	AHexMap* InitialiseGridData();
+
+	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	AHexMap* SpawnGrid();
+
+	UFUNCTION(BlueprintCallable, Category = "Tile Actors", meta = (AutoCreateRefTerm = "InTileData"))
+	AHexTile* SpawnTile(FVector pos, const FTileData& InTileData);
 
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
 	FTileData GetTileData(const FHexPoint& Index);
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
 	bool SetTileData(const FHexPoint& Index, const FTileData& data);
 
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
 	bool AddTileData(const FHexPoint& Index, const FTileData& TileData = FTileData(), bool createTile = true);
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Actors", meta = (AutoCreateRefTerm = "InTileData"))
-	AHexTile* SpawnTile(const FVector& pos, const FTileData& InTileData, FName Name = "");
-
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
-	int FlattenIndex(const FHexPoint& Index);
-
-	int FlattenIndex(const int ix, const int iy);
+	
+	inline int FlattenIndex(const FHexPoint& Index);
+	inline int FlattenIndex(const FIntPoint& Index);
+	inline int FlattenIndex(const int ix, const int iy);
 };

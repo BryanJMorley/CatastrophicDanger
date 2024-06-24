@@ -11,7 +11,7 @@
 AHexTile::AHexTile()
 {
 	map = nullptr;
-	tileCoords = { -1, -1 };
+	tileCoords = FHexPoint{ -1, -1 , -1 };
 	fireState = EFireState::NONE;
 	terrainData;
 	tileMesh = nullptr;
@@ -20,7 +20,7 @@ AHexTile::AHexTile()
 AHexTile::AHexTile(AHexMap* inMap)
 {
 	map = inMap;
-	tileCoords = { -1, -1 };
+	tileCoords = FHexPoint{ -1, -1 , -1};
 	fireState = EFireState::NONE;
 	terrainData;
 	tileMesh = nullptr;
@@ -41,7 +41,7 @@ AHexTile::AHexTile(AHexMap* inMap, const FHexPoint& Coords, const EFireState inF
 AHexTile* AHexTile::Initialise(AHexMap* inMap)
 {
 	map = inMap;
-	tileCoords = { -1, -1 };
+	tileCoords = FHexPoint{ -1, -1 , -1 };
 	fireState = EFireState::NONE;
 	terrainData;
 	return this;

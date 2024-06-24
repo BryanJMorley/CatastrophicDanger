@@ -18,10 +18,9 @@ AHexMap::AHexMap()
 	width = 0;
 	height = 0;
 	tileSize = 50;
-	tileClass = nullptr;
 	defaultVec = { -1,-1,-1 };
 	tilesAll = {};
-
+	tileTransforms = {};
 
 	//Default Spawning Properties
 	spawnP = {};
@@ -31,61 +30,87 @@ AHexMap::AHexMap()
 // Called when the game starts or when spawned
 void AHexMap::BeginPlay()
 {
-	tilesAll.Reserve(width * height + 1);
-	tilesAll.SetNumZeroed(width * height + 1);
-
+	tilesAll.Reserve(width * height);
+	tilesAll.SetNumZeroed(width * height);
+	tileTransforms.Reserve(width * height);
+	tileTransforms.SetNumZeroed(width * height);
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
 void AHexMap::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-AHexMap* AHexMap::SpawnGrid() {
-	for (int ix = 0; ix < width; ix++) {
-		for (int iy = 0; iy < height; iy++) {
-			AddTileData({ ix, iy });
-			tilesAll[FlattenIndex(ix, iy)].tile = SpawnTile(UHexTool::HexToPos({ ix, iy }, tileSize), tilesAll[FlattenIndex(ix, iy)]);
+AHexMap* AHexMap::InitialiseGridData() {
+	//clear the grid and double check size just in case
+	tilesAll.Reserve(width * height);
+	tilesAll.SetNumZeroed(width * height);
+	tileTransforms.Reserve(width * height);
+	tileTransforms.SetNumZeroed(width * height);
+
+	FIntPoint i = { 0,0 };
+	for (i.X = 0; i.X < width; i.X++) {
+		for (i.Y = 0; i.Y < height; i.Y++) {
+			FHexPoint iH = UHexTool::OffsetToHex(i);
+			AddTileData(iH);
+			FVector pos = UHexTool::HexToPos(FHexPoint(i.X, i.Y), tileSize);
+			FTransform M = FTransform(FQuat(0,0,0,1).GetNormalized(), pos, FVector(1, 1, 1));
+			tileTransforms[FlattenIndex(iH)] = M;
 		}
 	}
 	return this;
 }
 
+AHexTile* AHexMap::SpawnTile(FVector pos, const FTileData& InTileData) {
+	AHexTile* newTile = Cast<AHexTile>(GetWorld()->SpawnActor<AHexTile>(tileClass, pos, { 0,0,0 }));
+	newTile->Initialise(this, InTileData);
+	return newTile;
+}
+
 bool AHexMap::AddTileData(const FHexPoint& Index, const FTileData& TileData, bool createTile) {
-	if (Index.X < 0 || Index.Y < 0 || Index.X > width || Index.Y > height) { return false; }
 	int fInt = FlattenIndex(Index);
 	tilesAll[fInt] = TileData;
 	tilesAll[fInt].tileCoords = Index;
 	return true;
 }
 
-
-//YOU WERE HERE LOOKING AT SPAWN ACTOR
-AHexTile* AHexMap::SpawnTile(const FVector& pos, const FTileData& InTileData, FName Name) {
-	//AHexTile* newTile = GetWorld()->SpawnActor<AHexTile>(tileClass, Name, pos, { 0,0,0 }, NULL, spawnP);
-	newTile->Initialise(this, InTileData);
-	return newTile;
-}
-
 FTileData AHexMap::GetTileData(const FHexPoint& Index) {
-	if (Index.X < 0 || Index.Y < 0 || Index.X > width || Index.Y > height) { return FTileData(); }
-	return (tilesAll[FlattenIndex(Index)]);
+	int fI = FlattenIndex(Index);
+	if (fI<0 || fI > width * height) { return FTileData(); }
+	return tilesAll[fI];
 }
 
 bool AHexMap::SetTileData(const FHexPoint& Index, const FTileData& data) {
-	if (Index.X < 0 || Index.Y < 0 || Index.X > width || Index.Y > height) { return false; }
-	tilesAll[FlattenIndex(Index)] = data;
+	int fI = FlattenIndex(Index);
+	if (fI<0 || fI > width * height) { return false; }
+	tilesAll[fI] = data;
 	return true;
 }
 
 int AHexMap::FlattenIndex(const FHexPoint& Index) {
-	return (Index.X + Index.Y*width);
+	return FlattenIndex(UHexTool::HexToOffset(Index));
+}
+
+int AHexMap::FlattenIndex(const FIntPoint& Index) {
+	return (Index.X + Index.Y * width);
 }
 
 int AHexMap::FlattenIndex(const int iX, const int iY) {
-	return (iX + iY * width);
+	return (iX * height + iY);
+}
+
+
+//Probably dont need this now
+AHexMap* AHexMap::SpawnGrid() {
+	FIntPoint i = { 0,0 };
+	for (i.X = 0; i.X < width; i.X++) {
+		for (i.Y = 0; i.Y < height; i.Y++) {
+			FHexPoint iH = UHexTool::OffsetToHex(i);
+			AddTileData(iH);
+			tilesAll[FlattenIndex(i)].tile = SpawnTile(UHexTool::HexToPos(iH, tileSize), tilesAll[FlattenIndex(i)]);
+		}
+	}
+	return this;
 }

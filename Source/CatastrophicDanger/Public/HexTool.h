@@ -17,16 +17,23 @@ class CATASTROPHICDANGER_API UHexTool : public UBlueprintFunctionLibrary
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
-	static FVector HexToPos(const FHexPoint& Coords, float Spacing, bool Axial = false);
+	static FVector HexToPos(const FHexPoint& Coords, float Spacing);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
-    static FVector2f HexToPos2(const FHexPoint& Coords, float Spacing, bool Axial = false);
+    static FHexPoint PosToHex(FVector2D Pos, float Spacing);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
-    static FIntPoint AxialToOffset(FIntPoint Coords);
+    static FHexPoint makeHexPoint(FVector Pos);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
-    static FIntPoint OffsetToAxial(FIntPoint Coords);
+    static FIntPoint HexToOffset(FHexPoint Coords);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint OffsetToHex(FIntPoint Coords);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint RoundToHex(FHexFrac H);
 };
+
 
 
