@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "TerrainStructs.h"
+#include "Array2D.h"
+#include "FastNoiseWrapper.h"
 #include "HexMap.generated.h"
 
 class AHexTile;
@@ -15,11 +17,7 @@ class CATASTROPHICDANGER_API AHexMap : public AActor
 {
 	GENERATED_BODY()
 
-private:
-	FActorSpawnParameters spawnP;
-
 public:	
-	FVector defaultVec;
 	
 	//Map Properties
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
@@ -34,11 +32,17 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Map Properties")
 	TSubclassOf<AHexTile> tileClass = nullptr;
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
-	TArray<FTileData> tilesAll;
+	//Arrays to hold all the data. Structs are made to reference to it weakly, but it all stays here, which makes certain 
+	TArray2D<float> ar_fuel;
+	TArray2D<float> ar_heat;
+	TArray2D<float> ar_moisture;
+	TArray2D<float> ar_elevation;
+	TArray2D<ETerrainType> ar_terrainType;
+	TArray2D<FVector2D> ar_gradient;
+	TArray2D<TSubclassOf<AHexTile>> ar_tiles;
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
-	TArray<FTransform> tileTransforms;
+	//Finally, an array of reference Structs that hold pointers to the data in the arrays.
+	TArray2D<FTileRef> tilesAll;
 
 	AHexMap();
 
@@ -56,21 +60,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	AHexMap* SpawnGrid();
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Actors", meta = (AutoCreateRefTerm = "InTileData"))
+	UFUNCTION(BlueprintCallable, Category = "Terrain Gen", meta = (AutoCreateRefTerm = "InTileData"))
 	AHexTile* SpawnTile(FVector pos, const FTileData& InTileData);
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
-	FTileData GetTileData(const FHexPoint& Index);
+	UFUNCTION(BlueprintCallable, Category = "TerrainGen")
+	void NoiseToTileElevation(UFastNoiseWrapper* Noise, bool accuratePos = false);
+
+	/*UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
+	FTileData GetTileData(const FHexPoint& Index);*/
 
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
 	bool SetTileData(const FHexPoint& Index, const FTileData& data);
 
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
-	bool AddTileData(const FHexPoint& Index, const FTileData& TileData = FTileData(), bool createTile = true);
+	FTileRef GetTileRef(const FHexPoint& Index);	
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
-	
-	inline int FlattenIndex(const FHexPoint& Index);
-	inline int FlattenIndex(const FIntPoint& Index);
-	inline int FlattenIndex(const int ix, const int iy);
 };

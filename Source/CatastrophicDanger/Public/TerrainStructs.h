@@ -12,6 +12,15 @@ class AHexTile;
 class AHexMap;
 
 UENUM(BlueprintType)
+enum class ETileVariable : uint8
+{
+	ELEVATION		UMETA(DisplayName = "ELEVATION"),
+	FUEL			UMETA(DisplayName = "FUEL"),
+	HEAT			UMETA(DisplayName = "HEAT"),
+	MOISTURE		UMETA(DisplayName = "MOISTURE"),
+};
+
+UENUM(BlueprintType)
 enum class ETerrainType : uint8
 {
 	NONE		UMETA(DisplayName = "None"),
@@ -31,14 +40,14 @@ USTRUCT(BlueprintType)
 struct FTerrainData {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	ETerrainType terrainType;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	float elevation;
 
-	UPROPERTY(BlueprintReadWrite)
-	FVector2f gradient;
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	FVector2D gradient;
 
 	FTerrainData() {
 		terrainType = ETerrainType::NONE;
@@ -49,22 +58,38 @@ struct FTerrainData {
 };
 
 USTRUCT(BlueprintType)
+struct FTerrainRef {
+	GENERATED_BODY()
+
+	TWeakPtr<ETerrainType> terrainType;
+	TWeakPtr<float> elevation;
+	TWeakPtr<FVector2D> gradient;
+
+	FTerrainRef() {
+		terrainType = nullptr;
+		elevation = nullptr;
+		gradient = nullptr;
+	}
+
+};
+
+USTRUCT(BlueprintType)
 struct FFireData {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	float fuel;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	float heat;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	float moisture;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	bool update;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	EFireState fireState;
 
 	FFireData() {
@@ -77,6 +102,25 @@ struct FFireData {
 
 	FVector3f Pack() {
 		return { fuel, heat, moisture };
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FFireRef {
+	GENERATED_BODY()
+
+	TWeakPtr<float> fuel;
+	TWeakPtr<float> heat;
+	TWeakPtr<float> moisture;
+	TWeakPtr<float> update;
+	TWeakPtr<float> fireState;
+
+	FFireRef() {
+		fuel = nullptr;
+		heat = nullptr;
+		moisture = nullptr;
+		update = nullptr;
+		fireState = nullptr;
 	}
 };
 
@@ -104,10 +148,36 @@ struct FTileData {
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FTileRef {
+	GENERATED_BODY()
 
-class CATASTROPHICDANGER_API TerrainStructs
-{
-public:
-	TerrainStructs();
-	~TerrainStructs();
+	FHexPoint tileCoords;
+	TSharedPtr<TSubclassOf<AHexTile>> tile;
+	FTerrainRef terrainData;
+	FFireRef fireData;
+
+	FTileRef() {
+		tileCoords = FHexPoint{ -1,-1,-1 };
+		tile = nullptr;
+		terrainData;
+		fireData;
+	}
 };
+
+UCLASS()
+class CATASTROPHICDANGER_API UTileStructs : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+public:
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Terrain To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "Tile Data")
+	static FString Conv_TerrainToString(FTerrainData TData);
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Fire To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "Tile Data")
+	static FString Conv_FireToString(FFireData FData);
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Tile To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "Tile Data")
+	static FString Conv_TileToString(FTileData HData);
+};
+
+

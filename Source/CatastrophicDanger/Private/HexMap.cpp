@@ -5,7 +5,8 @@
 #include "HexTile.h"
 #include "HexTool.h"
 #include "HexPoint.h"
-
+#include "Array2D.h"
+#include "FastNoiseWrapper.h"
 
 
 // Sets default values
@@ -15,25 +16,24 @@ AHexMap::AHexMap()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	//Default Map Properties
-	width = 0;
-	height = 0;
-	tileSize = 50;
-	defaultVec = { -1,-1,-1 };
-	tilesAll = {};
-	tileTransforms = {};
-
-	//Default Spawning Properties
-	spawnP = {};
-	spawnP.Owner = this;
+	width = 1;
+	height = 1;
+	tileSize = 250;
+	tilesAll;
 }
 
 // Called when the game starts or when spawned
 void AHexMap::BeginPlay()
-{
-	tilesAll.Reserve(width * height);
-	tilesAll.SetNumZeroed(width * height);
-	tileTransforms.Reserve(width * height);
-	tileTransforms.SetNumZeroed(width * height);
+{	
+	//initialise all the arrays lol
+	tilesAll.Init(width, height);
+	ar_fuel.Init(width, height);
+	ar_heat.Init(width, height);
+	ar_moisture.Init(width, height);
+	ar_elevation.Init(width, height);
+	ar_terrainType.Init(width, height);
+	ar_gradient.Init(width, height);
+	ar_tiles.Init(width, height);
 	Super::BeginPlay();
 }
 
@@ -44,20 +44,10 @@ void AHexMap::Tick(float DeltaTime)
 }
 
 AHexMap* AHexMap::InitialiseGridData() {
-	//clear the grid and double check size just in case
-	tilesAll.Reserve(width * height);
-	tilesAll.SetNumZeroed(width * height);
-	tileTransforms.Reserve(width * height);
-	tileTransforms.SetNumZeroed(width * height);
-
 	FIntPoint i = { 0,0 };
-	for (i.X = 0; i.X < width; i.X++) {
-		for (i.Y = 0; i.Y < height; i.Y++) {
-			FHexPoint iH = UHexTool::OffsetToHex(i);
-			AddTileData(iH);
-			FVector pos = UHexTool::HexToPos(FHexPoint(i.X, i.Y), tileSize);
-			FTransform M = FTransform(FQuat(0,0,0,1).GetNormalized(), pos, FVector(1, 1, 1));
-			tileTransforms[FlattenIndex(iH)] = M;
+	for (i.Y = 0; i.Y < height; i.Y++) {
+		for (i.X = 0; i.X < width; i.X++) {
+			tilesAll(i) = GetTileRef(FHexPoint(i));
 		}
 	}
 	return this;
@@ -69,48 +59,54 @@ AHexTile* AHexMap::SpawnTile(FVector pos, const FTileData& InTileData) {
 	return newTile;
 }
 
-bool AHexMap::AddTileData(const FHexPoint& Index, const FTileData& TileData, bool createTile) {
-	int fInt = FlattenIndex(Index);
-	tilesAll[fInt] = TileData;
-	tilesAll[fInt].tileCoords = Index;
-	return true;
-}
-
-FTileData AHexMap::GetTileData(const FHexPoint& Index) {
-	int fI = FlattenIndex(Index);
-	if (fI<0 || fI > width * height) { return FTileData(); }
-	return tilesAll[fI];
-}
-
-bool AHexMap::SetTileData(const FHexPoint& Index, const FTileData& data) {
-	int fI = FlattenIndex(Index);
-	if (fI<0 || fI > width * height) { return false; }
-	tilesAll[fI] = data;
-	return true;
-}
-
-int AHexMap::FlattenIndex(const FHexPoint& Index) {
-	return FlattenIndex(UHexTool::HexToOffset(Index));
-}
-
-int AHexMap::FlattenIndex(const FIntPoint& Index) {
-	return (Index.X + Index.Y * width);
-}
-
-int AHexMap::FlattenIndex(const int iX, const int iY) {
-	return (iX * height + iY);
-}
-
-
-//Probably dont need this now
 AHexMap* AHexMap::SpawnGrid() {
-	FIntPoint i = { 0,0 };
-	for (i.X = 0; i.X < width; i.X++) {
-		for (i.Y = 0; i.Y < height; i.Y++) {
-			FHexPoint iH = UHexTool::OffsetToHex(i);
-			AddTileData(iH);
-			tilesAll[FlattenIndex(i)].tile = SpawnTile(UHexTool::HexToPos(iH, tileSize), tilesAll[FlattenIndex(i)]);
-		}
+	for(FTileRef& tD : tilesAll.Inner)
+	{
+		//tD.tile = SpawnTile(UHexTool::HexToPos(tD.tileCoords, tileSize), tD);
 	}
 	return this;
 }
+
+void AHexMap::NoiseToTileElevation(UFastNoiseWrapper* Noise, bool accuratePos) {
+	for (FTileRef& tD : tilesAll.Inner) {
+		FIntPoint coords = tD.tileCoords.ToOffset();
+		*tD.terrainData.elevation.Pin() = Noise->GetNoise2D(coords.X, coords.Y);
+	}
+}
+
+//FTileData AHexMap::GetTileData(const FHexPoint& Index) {
+//	return tilesAll(Index);
+//}
+
+FTileRef AHexMap::GetTileRef(const FHexPoint& Index) {
+	int fI = tilesAll.FlatIndex(Index);
+	FTileRef tile;
+	tile.terrainData.terrainType = MakeShared<ETerrainType>(ar_terrainType(fI));
+	tile.terrainData.elevation = MakeShared<float>(ar_elevation(fI));
+	tile.terrainData.gradient = MakeShared<FVector2D>(ar_gradient(fI));
+	tile.fireData.fuel = MakeShared<float>(ar_fuel(fI));
+	tile.fireData.heat = MakeShared<float>(ar_heat(fI));
+	tile.fireData.moisture = MakeShared<float>(ar_moisture(fI));
+	tile.tile = MakeShared<TSubclassOf<AHexTile>>(ar_tiles(fI));
+	tile.tileCoords = Index;
+
+	return tile;
+}
+
+bool AHexMap::SetTileData(const FHexPoint& Index, const FTileData& data) {
+	//tilesAll(Index) = data;
+	return true;
+}
+
+//
+//int AHexMap::FlattenIndex(const FHexPoint& Index) {
+//	return FlattenIndex(UHexTool::HexToOffset(Index));
+//}
+//
+//int AHexMap::FlattenIndex(const FIntPoint& Index) {
+//	return (Index.X + Index.Y * width);
+//}
+//
+//int AHexMap::FlattenIndex(const int iX, const int iY) {
+//	return (iX * height + iY);
+//}

@@ -19,7 +19,6 @@ const UPerlin* UPerlin::SetupPerlin(int InSeed = 0, FVector InOffset = {0,0,0}, 
 }
 
 double UPerlin::SamplePerlin1D(double x) {
-    FMath::Initial
     double totalVal = 0;
     double max_amp = 0;
 

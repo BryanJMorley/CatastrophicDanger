@@ -2,7 +2,6 @@
 
 
 #include "HexTool.h"
-#include "Logging/StructuredLog.h"
 
 static const float SQRT3 = sqrtf(3);
 
@@ -22,7 +21,6 @@ FHexPoint UHexTool::PosToHex(FVector2D Pos, float Spacing) {
     Pos = Pos/Spacing;
     Pos = TransformPoint(pointToHexMatrix, Pos);
     FHexFrac hexFrac(Pos.X, Pos.Y, -Pos.X-Pos.Y);
-    UE_LOGFMT(LogTemp, Display, "Frac Value is: {0}, {1}, {2}", hexFrac.X, hexFrac.Y, hexFrac.Z);
     return RoundToHex(hexFrac);
 }
 

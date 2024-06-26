@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 #include "TerrainStructs.h"
 #include "HexTile.generated.h"
 
@@ -16,31 +15,22 @@ class CATASTROPHICDANGER_API AHexTile : public AActor
 	
 public:	
 	// All the Grid Map Info required.
-	UPROPERTY(BlueprintReadWrite, Category = "Map Data")
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
 	AHexMap* map; //store the responsible map controller
 
-	UPROPERTY(BlueprintReadWrite, Category = "Map Data")
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
 	FHexPoint tileCoords; //keep a copy of the coords
 
-	UPROPERTY(BlueprintReadWrite, Category = "Map Data")
-	EFireState fireState; //firestate for displayStuff
-
-	UPROPERTY(BlueprintReadWrite, Category = "Map Data")
-	FTerrainData terrainData; //All the Terrain Data for display stuff
-
-	//Actual Mesh Data Stuff
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Map Data")
-	UStaticMeshComponent* tileMesh; //All the Terrain Data for display stuff
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
+	EFireState fireState; //firestate for displayStuff, keep a copy indepent for synchronizing
 
 	//Constructor Functions
 	AHexTile();
 	AHexTile(AHexMap* inMap);
-	AHexTile(AHexMap* inMap, const FHexPoint& Coords, const EFireState inFireState, const FTerrainData& inData);
+	AHexTile(AHexMap* inMap, const FTileData& InData);
 
 	//Initialiser Functions to do the same
 	AHexTile* Initialise(AHexMap* inMap);
-	AHexTile* Initialise(AHexMap* inMap, const FHexPoint& Coords, const EFireState inFireState, const FTerrainData& inData);
-	
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "InData"))
 	AHexTile* Initialise(AHexMap* inMap, const FTileData& InData);
 
@@ -48,8 +38,22 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	const FTerrainData* terrainData;
+	const FFireData* fireData;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+
+	//defining these here because they are fast and small.
+	UFUNCTION(BlueprintCallable, Category = "Map Data")
+	inline FFireData GetFire() const {
+		return *fireData;
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "Map Data")
+	inline FTerrainData GetTerrain() const{
+		return *terrainData;
+	}
 };

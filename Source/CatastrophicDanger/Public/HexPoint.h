@@ -27,12 +27,14 @@ public:
 		Z = S;
 	}
 
+	//constructs cubic coords from an int point
 	FHexPoint(const FIntPoint& Point) {
 		X = Point.X;
 		Y = Point.Y - (X - (X & 1)) / 2;
 		Z = -X-Y;
 	}
 
+	//constructs cubic coords from 2 ints
 	FHexPoint(int Q, int R) {
 		X = Q;
 		Y = R - (Q - (Q & 1)) / 2;
@@ -57,13 +59,13 @@ public:
 		Z = V.Z;
 	}
 
-	inline FIntPoint ToOffset() {
+	inline FIntPoint ToOffset() const {
 		return { X, Y + (X - (X&1)) / 2};
 	}
 
-	inline FIntPoint ToOffset(FHexPoint inH) {
+	/*inline FIntPoint ToOffset(FHexPoint inH) {
 		return { inH.X, inH.Y + (inH.X - (inH.X & 1)) / 2 };
-	}
+	}*/
 
 };
 

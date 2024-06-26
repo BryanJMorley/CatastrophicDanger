@@ -14,7 +14,7 @@ AHexTile::AHexTile()
 	tileCoords = FHexPoint{ -1, -1 , -1 };
 	fireState = EFireState::NONE;
 	terrainData;
-	tileMesh = nullptr;
+	//tileMesh = nullptr;
 }
 
 AHexTile::AHexTile(AHexMap* inMap)
@@ -23,15 +23,15 @@ AHexTile::AHexTile(AHexMap* inMap)
 	tileCoords = FHexPoint{ -1, -1 , -1};
 	fireState = EFireState::NONE;
 	terrainData;
-	tileMesh = nullptr;
+	//tileMesh = nullptr;
 }
-AHexTile::AHexTile(AHexMap* inMap, const FHexPoint& Coords, const EFireState inFireState, const FTerrainData& inData)
+AHexTile::AHexTile(AHexMap* inMap, const FTileData& InData)
 {
 	map = inMap;
-	tileCoords = Coords;
-	fireState = inFireState;
-	terrainData = inData;
-	tileMesh = nullptr;
+	tileCoords = InData.tileCoords;
+	fireState = InData.fireData.fireState;
+	terrainData = &InData.terrainData;
+	fireData = &InData.fireData;
 }
 
 #pragma endregion Constructors
@@ -46,21 +46,14 @@ AHexTile* AHexTile::Initialise(AHexMap* inMap)
 	terrainData;
 	return this;
 }
-AHexTile* AHexTile::Initialise(AHexMap* inMap, const FHexPoint& Coords, const EFireState inFireState, const FTerrainData& inData)
-{
-	map = inMap;
-	tileCoords = Coords;
-	fireState = inFireState;
-	terrainData = inData;
-	return this;
-}
 
 AHexTile* AHexTile::Initialise(AHexMap* inMap, const FTileData& InData)
 {
 	map = inMap;
 	tileCoords = InData.tileCoords;
 	fireState = InData.fireData.fireState;
-	terrainData = InData.terrainData;
+	terrainData = &InData.terrainData;
+	fireData = &InData.fireData;
 	return this;
 }
 
