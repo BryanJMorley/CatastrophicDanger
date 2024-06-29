@@ -6,7 +6,6 @@
 //forward Declare hex tile
 class AHexTile;
 
-
 FString UTileStructs::Conv_TerrainToString(FTerrainData TData)
 { 
 	return FString::Printf(TEXT("Biome: %s Elevation: %f Gradient: %f"), *UEnum::GetValueAsName(TData.terrainType).ToString(), TData.elevation, TData.gradient.X);

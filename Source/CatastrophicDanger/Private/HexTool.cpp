@@ -9,12 +9,12 @@ const FMatrix2x2 hexToPointMatrix = { 1.5f, (SQRT3 / 2.0f), 0.0f, SQRT3 }; //Mag
 
 const FMatrix2x2 pointToHexMatrix = { 2.0f / 3.0f, -1.0f / 3.0f, 0.0f, SQRT3 / 3.0f }; //Inverse Matrix to do the opposite
 
-FVector UHexTool::HexToPos(const FHexPoint &Coords, float Spacing) {
+FVector UHexTool::HexToPos(const FHexPoint &Coords, float Spacing, float Height) {
     FVector2D pos;
     pos.X = Coords.X;
     pos.Y = Coords.Y;
     pos = TransformPoint(hexToPointMatrix, pos) * Spacing;
-    return { pos.X, pos.Y, 0 };
+    return { pos.X, pos.Y, Height };
 }
 
 FHexPoint UHexTool::PosToHex(FVector2D Pos, float Spacing) {

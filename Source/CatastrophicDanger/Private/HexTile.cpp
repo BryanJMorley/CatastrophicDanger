@@ -4,9 +4,7 @@
 #include "HexTile.h"
 #include "HexMap.h"
 
-// Sets default values
 
-#pragma region Constructors
 
 AHexTile::AHexTile()
 {
@@ -17,47 +15,42 @@ AHexTile::AHexTile()
 	//tileMesh = nullptr;
 }
 
-AHexTile::AHexTile(AHexMap* inMap)
+
+void AHexTile::Initialise(AHexMap* InMap, FHexPoint Index)
 {
-	map = inMap;
-	tileCoords = FHexPoint{ -1, -1 , -1};
-	fireState = EFireState::NONE;
-	terrainData;
-	//tileMesh = nullptr;
-}
-AHexTile::AHexTile(AHexMap* inMap, const FTileData& InData)
-{
-	map = inMap;
-	tileCoords = InData.tileCoords;
-	fireState = InData.fireData.fireState;
-	terrainData = &InData.terrainData;
-	fireData = &InData.fireData;
+	map = InMap;
+	tileCoords = Index;
+	tileIndex = InMap->HexToIndex(Index);
+	fireState = InMap->ArInnerFireState[tileIndex];
+	terrainData = InMap->GetTerrainData(Index);
+	map->OnTerrainUpdate.AddUObject(this, &AHexTile::OnTerrainUpdate);
 }
 
-#pragma endregion Constructors
-
-#pragma region Initialise
-
-AHexTile* AHexTile::Initialise(AHexMap* inMap)
+#pragma region Updates
+void AHexTile::UpdateTransform()
 {
-	map = inMap;
-	tileCoords = FHexPoint{ -1, -1 , -1 };
-	fireState = EFireState::NONE;
-	terrainData;
-	return this;
+	terrainData.elevation = map->ArInnerElevation[tileIndex];
+	FTransform newTransform = GetActorTransform();
+	FVector CurrentPos = newTransform.GetTranslation();
+	newTransform.SetLocation({CurrentPos.X, CurrentPos.Y, terrainData.elevation });
+	SetActorTransform(newTransform);
 }
 
-AHexTile* AHexTile::Initialise(AHexMap* inMap, const FTileData& InData)
-{
-	map = inMap;
-	tileCoords = InData.tileCoords;
-	fireState = InData.fireData.fireState;
-	terrainData = &InData.terrainData;
-	fireData = &InData.fireData;
-	return this;
+void AHexTile::OnTerrainUpdate(bool Transform) {
+	GetTerrain();
+	if (Transform) UpdateTransform();
 }
 
-#pragma endregion Initialise
+
+void AHexTile::GetTerrain()
+{
+	fireState = map->ArInnerFireState[tileIndex];
+	terrainData = map->GetTerrainData(tileCoords);
+
+}
+
+
+#pragma endregion Updates
 
 
 // Called when the game starts or when spawned

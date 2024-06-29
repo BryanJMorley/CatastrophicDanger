@@ -58,22 +58,6 @@ struct FTerrainData {
 };
 
 USTRUCT(BlueprintType)
-struct FTerrainRef {
-	GENERATED_BODY()
-
-	TWeakPtr<ETerrainType> terrainType;
-	TWeakPtr<float> elevation;
-	TWeakPtr<FVector2D> gradient;
-
-	FTerrainRef() {
-		terrainType = nullptr;
-		elevation = nullptr;
-		gradient = nullptr;
-	}
-
-};
-
-USTRUCT(BlueprintType)
 struct FFireData {
 	GENERATED_BODY()
 
@@ -106,25 +90,6 @@ struct FFireData {
 };
 
 USTRUCT(BlueprintType)
-struct FFireRef {
-	GENERATED_BODY()
-
-	TWeakPtr<float> fuel;
-	TWeakPtr<float> heat;
-	TWeakPtr<float> moisture;
-	TWeakPtr<float> update;
-	TWeakPtr<float> fireState;
-
-	FFireRef() {
-		fuel = nullptr;
-		heat = nullptr;
-		moisture = nullptr;
-		update = nullptr;
-		fireState = nullptr;
-	}
-};
-
-USTRUCT(BlueprintType)
 struct FTileData {
 	GENERATED_BODY()
 
@@ -148,20 +113,71 @@ struct FTileData {
 	}
 };
 
+
+// Dont think I need this actually, delete later
+
+
+USTRUCT(BlueprintType)
+struct FFireRef {
+	GENERATED_BODY()
+
+	TWeakPtr<float> fuel;
+	TWeakPtr<float> heat;
+	TWeakPtr<float> moisture;
+	TWeakPtr<bool> update;
+	TWeakPtr<EFireState> fireState;
+
+	FFireRef(float& infuel, float& inheat, float& inmoisture, bool& inupdate, EFireState& infireState){
+		fuel = MakeShared<float>(infuel);
+		heat = MakeShared<float>(inheat);
+		moisture = MakeShared<float>(inmoisture);
+		update = MakeShared<bool>(inupdate);
+		fireState = MakeShared<EFireState>(infireState);
+	}
+
+	FFireRef() {
+		fuel = nullptr;
+		heat = nullptr;
+		moisture = nullptr;
+		update = nullptr;
+		fireState = nullptr;
+	}
+
+
+};
+
+USTRUCT(BlueprintType)
+struct FTerrainRef {
+	GENERATED_BODY()
+
+	TWeakPtr<ETerrainType> terrainType;
+	TWeakPtr<float> elevation;
+	TWeakPtr<FVector2D> gradient;
+
+	FTerrainRef(ETerrainType& inTerrainType, float& inElevation, FVector2D& inGradient){
+		terrainType = MakeShared<ETerrainType>(inTerrainType);
+		elevation = MakeShared<float>(inElevation);
+		gradient = MakeShared<FVector2D>(inGradient);
+	}
+
+	FTerrainRef() : terrainType(nullptr), elevation(nullptr), gradient(nullptr) {}
+
+};
+
 USTRUCT(BlueprintType)
 struct FTileRef {
 	GENERATED_BODY()
 
 	FHexPoint tileCoords;
-	TSharedPtr<TSubclassOf<AHexTile>> tile;
-	FTerrainRef terrainData;
-	FFireRef fireData;
+	AHexTile* tile;
+	FTerrainRef terrainRef;
+	FFireRef fireRef;
 
 	FTileRef() {
-		tileCoords = FHexPoint{ -1,-1,-1 };
+		tileCoords;
 		tile = nullptr;
-		terrainData;
-		fireData;
+		terrainRef;
+		fireRef;
 	}
 };
 
@@ -178,6 +194,5 @@ public:
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Tile To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "Tile Data")
 	static FString Conv_TileToString(FTileData HData);
+
 };
-
-

@@ -12,26 +12,35 @@ class TArray2D
 public:
 	int XSize = 0;
 	int YSize = 0;
-	TArray<ElementType> Inner;
+	TArray<ElementType>* Inner;
 
 public:
-	void Init(const ElementType& Element, int InXSize, int InYSize) {
+	TArray2D<ElementType>(TArray<ElementType>& TargetArray, int InXSize, int InYSize)
+	{
 		XSize = InXSize;
 		YSize = InYSize;
-		Inner.Init(Element, InXSize*InYSize);
+		Inner = &TargetArray;
+		Inner->SetNumZeroed(InXSize * InYSize);
 	}
 
-	void Init(int InXSize, int InYSize) {
+	TArray2D<ElementType>(TArray<ElementType>& TargetArray)
+	{
+		Inner = &TargetArray;
+	}
+
+	void Init(TArray<ElementType>& TargetArray, int InXSize, int InYSize) {
 		XSize = InXSize;
 		YSize = InYSize;
-		Inner.SetNumZeroed(InXSize * InYSize);
+		Inner = &TargetArray;
+		Inner->SetNumZeroed(InXSize * InYSize);
 	}
 	
-	ElementType& operator[](int i) {
-		return Inner[i];
+	ElementType& operator()(int i) {
+		return Inner->GetData()[i];
 	}
+	
 	ElementType& operator()(int iX, int iY) {
-		return Inner[iX + iY*YSize];
+		return Inner->GetData()[iX + iY*YSize];
 	}
 
 	//const ElementType& operator()(int iX, int iY) {
@@ -40,7 +49,7 @@ public:
 
 
 	ElementType& operator()(FIntPoint i) {
-		return Inner[i.X + i.Y * YSize];
+		return Inner->GetData()[i.X + i.Y * YSize];
 	}
 
 	//const ElementType& operator()(FIntPoint i) {
@@ -49,7 +58,7 @@ public:
 
 	ElementType& operator()(const FHexPoint& i) {
 		FIntPoint coord = i.ToOffset();
-		return Inner[coord.X+coord.Y*YSize];
+		return Inner->GetData()[coord.X+coord.Y*YSize];
 	}
 	
 	/*
@@ -59,12 +68,13 @@ public:
 
 	inline int FlatIndex(const FHexPoint& i) const {
 		FIntPoint coord = i.ToOffset();
-		return coord.X + coord.Y * YSize;
+		return coord.X + coord.Y * XSize;
 	}
 	inline int FlatIndex(FIntPoint& i) const {
-		return i.X + i.Y * YSize;
+		return i.X + i.Y * XSize;
 	}
 	inline int FlatIndex(int ix, int iy) const {
-		return ix + ix * YSize;
+		return ix + iy * XSize;
 	}
+
 };

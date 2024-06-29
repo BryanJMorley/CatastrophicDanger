@@ -15,7 +15,7 @@ struct FHexPoint : public FIntVector {
 public: 
 	using FIntVector::FIntVector;
 
-	FHexPoint(const FIntVector& Point) {
+	FHexPoint(FIntVector Point) {
 			X = Point.X;
 			Y = Point.Y;
 			Z = Point.Z;
@@ -28,7 +28,7 @@ public:
 	}
 
 	//constructs cubic coords from an int point
-	FHexPoint(const FIntPoint& Point) {
+	FHexPoint(FIntPoint Point) {
 		X = Point.X;
 		Y = Point.Y - (X - (X & 1)) / 2;
 		Z = -X-Y;

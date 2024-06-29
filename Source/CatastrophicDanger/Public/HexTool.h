@@ -17,7 +17,7 @@ class CATASTROPHICDANGER_API UHexTool : public UBlueprintFunctionLibrary
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
-	static FVector HexToPos(const FHexPoint& Coords, float Spacing);
+    static FVector HexToPos(const FHexPoint& Coords, float Spacing, float Height = 0);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
     static FHexPoint PosToHex(FVector2D Pos, float Spacing);
