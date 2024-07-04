@@ -44,7 +44,7 @@ public:
 	void GetTerrain();
 
 	UFUNCTION(BlueprintCallable, Category = "Tile Update")
-	void OnTerrainUpdate(bool Transform);
+	void OnTerrainUpdateDelegate(bool Transform);
 
 
 

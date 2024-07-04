@@ -57,17 +57,6 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
      return h;
  }
 
-
-
-
-
-
-
-
-
-
-
-
 //
 //FHexPoint UHexTool::AxialToOffset(FHexPoint Coords) {
 //    FHexPoint offset = { 0, 0 };

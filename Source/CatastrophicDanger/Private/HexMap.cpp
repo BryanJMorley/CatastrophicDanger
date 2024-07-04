@@ -17,8 +17,7 @@ AHexMap::AHexMap()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	//Default Map Properties
-	MapWidth = 1;
-	MapHeight = 1;
+	MapSize = 1;
 	TileSize = 250;	
 }
 
@@ -36,15 +35,15 @@ void AHexMap::Tick(float DeltaTime)
 }
 
 void AHexMap::InitialiseGrids() {
-	Ar2Fuel.Init(ArInnerFuel, MapWidth, MapHeight);
-	Ar2Heat.Init(ArInnerHeat, MapWidth, MapHeight);
-	Ar2Moisture.Init(ArInnerMoisture, MapWidth, MapHeight);
-	Ar2Update.Init(ArInnerUpdate, MapWidth, MapHeight);
-	Ar2Elevation.Init(ArInnerElevation, MapWidth, MapHeight);
-	Ar2TerrainType.Init(ArInnerTerrainType, MapWidth, MapHeight);
-	Ar2FireState.Init(ArInnerFireState, MapWidth, MapHeight);
-	Ar2Gradient.Init(ArInnerGradient, MapWidth, MapHeight);
-	Ar2Tiles.Init(ArInnerTiles, MapWidth, MapHeight);
+	Ar2Fuel.Init(ArInnerFuel, MapSize);
+	Ar2Heat.Init(ArInnerHeat, MapSize);
+	Ar2Moisture.Init(ArInnerMoisture, MapSize);
+	Ar2Update.Init(ArInnerUpdate, MapSize);
+	Ar2Elevation.Init(ArInnerElevation, MapSize);
+	Ar2TerrainType.Init(ArInnerTerrainType, MapSize);
+	Ar2FireState.Init(ArInnerFireState, MapSize);
+	Ar2Gradient.Init(ArInnerGradient, MapSize);
+	Ar2Tiles.Init(ArInnerTiles, MapSize);
 	MapSetupState = MapSetupState|int(EMapProgress::INITARRAYS);
 }
 
@@ -56,12 +55,12 @@ AHexTile* AHexMap::SpawnTile(FVector pos, FHexPoint Index) {
 }
 
 void AHexMap::TriggerTerrainUpdate() {
-	OnTerrainUpdate.Broadcast(true);
+	OnTerrainUpdateDelegate.Broadcast(true);
 }
 
 void AHexMap::SpawnGrid() {
 	if (MapSetupState & int(EMapProgress::INITARRAYS)) {
-		for (int i = 0; i < MapWidth * MapHeight; i++)
+		for (int i = 0; i < MapSize*MapSize; i++)
 		{
 			FVector pos = UHexTool::HexToPos(IndexToHex(i), TileSize, ArInnerElevation[i]);
 			ArInnerTiles[i] = SpawnTile(pos, IndexToHex(i));
@@ -81,7 +80,7 @@ void AHexMap::DestroyGrid() {
 		ActorFound->Destroy();
 	}
 	//then fill the grid with nullptr
-	ArInnerTiles.SetNumZeroed(MapWidth * MapHeight);
+	ArInnerTiles.SetNumZeroed(MapSize*MapSize);
 }
 
 #pragma region Noise2Array
@@ -175,8 +174,44 @@ FTileRef AHexMap::MakeTileRef(int i) {
 	tile.terrainRef = FTerrainRef(ArInnerTerrainType[i], ArInnerElevation[i], ArInnerGradient[i]);
 	tile.fireRef = FFireRef(ArInnerFuel[i], ArInnerHeat[i], ArInnerMoisture[i], ArInnerUpdate[i], ArInnerFireState[i]);
 	tile.tile = ArInnerTiles[i];
-	tile.tileCoords = FHexPoint((i % MapWidth), int(i / MapHeight));
+	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
 	return tile;
+}
+
+ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp) const
+{
+	
+	if (SoilQual < -0.3f) {
+		if (Temp < -0.3f) {
+			return ETerrainType::GRASSLAND;
+		}
+		else {
+			return ETerrainType::SHRUBLAND;
+		}
+	}
+	else if(SoilQual < 0.3f) {
+		if (Temp < -0.3f) {
+			return ETerrainType::WETFOREST;
+		}
+		else if (Temp < 0.3f) {
+			return ETerrainType::DRYFOREST;
+		}
+		else {
+			return ETerrainType::GRASSLAND;
+		}
+	}
+	else {
+		if (Temp < -0.3f) {
+			return ETerrainType::PINEFOREST;
+		}
+		else if (Temp < 0.3f) {
+			return ETerrainType::WETFOREST;
+		}
+		else {
+			return ETerrainType::DRYFOREST;
+		}
+	}
+	return ETerrainType::NONE;
 }
 
 #pragma region getData 

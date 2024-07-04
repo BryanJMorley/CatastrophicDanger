@@ -13,8 +13,7 @@
 
 class AHexTile;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FTerrainUpdateDelegate, bool);
-
+DECLARE_MULTICAST_DELEGATE_OneParam(FTerrainUpdateSignature, bool);
 
 #pragma region ClassBody
 UCLASS(Blueprintable, Placeable)
@@ -29,9 +28,7 @@ public:
 #pragma region MapVariables
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
-	int MapWidth;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties") 
-	int MapHeight;
+	int MapSize;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties") 
 	float TileSize;
 #pragma endregion MapVariables
@@ -47,41 +44,41 @@ public:
 
 #pragma region Delegates
 
-	FTerrainUpdateDelegate OnTerrainUpdate;
+	FTerrainUpdateSignature OnTerrainUpdateDelegate;
 
-#pragma endregion Delegates	
+#pragma endregion Delegates
 
 #pragma region DataArrays
 	//Arrays to hold all the data. Structs are made to reference to it weakly, but it all stays here, which makes certain 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fuel"))
-	TArray<float> ArInnerFuel;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Heat"))
-	TArray<float> ArInnerHeat;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
-	TArray<float> ArInnerMoisture;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tile Update"))
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fuel"))
+	TArray<uint8> ArInnerFuel;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Heat"))
+	TArray<uint8> ArInnerHeat;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
+	TArray<uint8> ArInnerMoisture;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tile Update"))
 	TArray<bool> ArInnerUpdate;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Elevation"))
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Elevation"))
 	TArray<float> ArInnerElevation;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Terrain Type"))
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Terrain Type"))
 	TArray<ETerrainType> ArInnerTerrainType;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fire State"))
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fire State"))
 	TArray<EFireState> ArInnerFireState;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Gradient"))
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Gradient"))
 	TArray<FVector2D> ArInnerGradient;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tiles"))
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tiles"))
 	TArray<AHexTile*> ArInnerTiles;
 
 	//Construct 2D Array Wrappers around them all
-	TArray2D<float> Ar2Fuel = TArray2D<float>(ArInnerFuel);
-	TArray2D<float> Ar2Heat = TArray2D<float>(ArInnerHeat);
-	TArray2D<float> Ar2Moisture = TArray2D<float>(ArInnerMoisture);
-	TArray2D<bool> Ar2Update = TArray2D<bool>(ArInnerUpdate);
-	TArray2D<float> Ar2Elevation = TArray2D<float>(ArInnerElevation);
-	TArray2D<ETerrainType> Ar2TerrainType = TArray2D<ETerrainType>(ArInnerTerrainType);
-	TArray2D<EFireState> Ar2FireState = TArray2D<EFireState>(ArInnerFireState);
-	TArray2D<FVector2D> Ar2Gradient = TArray2D<FVector2D>(ArInnerGradient);
-	TArray2D<AHexTile*> Ar2Tiles = TArray2D<AHexTile*>(ArInnerTiles);
+	TArray2D<uint8> Ar2Fuel = { ArInnerFuel };
+	TArray2D<uint8> Ar2Heat = { ArInnerHeat };
+	TArray2D<uint8> Ar2Moisture = { ArInnerMoisture };
+	TArray2D<bool> Ar2Update = { ArInnerUpdate };
+	TArray2D<float> Ar2Elevation = { ArInnerElevation };
+	TArray2D<ETerrainType> Ar2TerrainType = { ArInnerTerrainType };
+	TArray2D<EFireState> Ar2FireState = { ArInnerFireState };
+	TArray2D<FVector2D> Ar2Gradient = { ArInnerGradient };
+	TArray2D<AHexTile*> Ar2Tiles = { ArInnerTiles };
 #pragma endregion DataArrays
 
 #pragma endregion Properties
@@ -140,31 +137,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	FORCEINLINE int HexToIndex(const FHexPoint& Index) const {
 		FIntPoint coord = Index.ToOffset();
-		return coord.X + coord.Y * MapWidth;
+		return coord.X + coord.Y * MapSize;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	FORCEINLINE FHexPoint IndexToHex(const int& Index) const {
-		FHexPoint coord = { (Index%MapWidth), (Index / MapWidth) };
+		FHexPoint coord = { (Index%MapSize), (Index / MapSize) };
 		return coord;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	FORCEINLINE FIntPoint IndexToCoord(const int& Index) const {
-		FIntPoint coord = { (Index % MapWidth), (Index / MapWidth) };
+		FIntPoint coord = { (Index % MapSize), (Index / MapSize) };
 		return coord;
 	}
+
+	UFUNCTION(BlueprintCallable, Category = "Map Setup")
+	ETerrainType TerrainTypeSelector(const float& SoilQual, const float& Temp) const;
 
 #pragma endregion Utilities
 
 };
-
-UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
-enum class EMapProgress : uint8
-{
-	NONE = 0			UMETA(Hidden),
-	INITARRAYS = 1		UMETA(DisplayName = "Arrays Initialised"),
-	FILLDATA = 2		UMETA(DisplayName = "Arrays Filled"),
-	SPAWNTILES = 4		UMETA(DisplayName = "Tiles Spawned"),
-};
-ENUM_CLASS_FLAGS(EMapProgress);

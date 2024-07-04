@@ -4,37 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "HexPoint.h"
+#include "CDEnums.h"
 #include "TerrainStructs.generated.h"
 
 
 //Forward Declarations
 class AHexTile;
 class AHexMap;
-
-UENUM(BlueprintType)
-enum class ETileVariable : uint8
-{
-	ELEVATION		UMETA(DisplayName = "ELEVATION"),
-	FUEL			UMETA(DisplayName = "FUEL"),
-	HEAT			UMETA(DisplayName = "HEAT"),
-	MOISTURE		UMETA(DisplayName = "MOISTURE"),
-};
-
-UENUM(BlueprintType)
-enum class ETerrainType : uint8
-{
-	NONE		UMETA(DisplayName = "None"),
-	GRASSLAND	UMETA(DisplayName = "Grassland"),
-	FOREST		UMETA(DisplayName = "Forest"),
-};  
-
-UENUM(BlueprintType)
-enum class EFireState : uint8
-{
-	NONE		UMETA(DisplayName = "None"),
-	BURNING		UMETA(DisplayName = "Burning"),
-	BURNT		UMETA(DisplayName = "Burnt"),
-};
 
 USTRUCT(BlueprintType)
 struct FTerrainData {
@@ -62,13 +38,13 @@ struct FFireData {
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	float fuel;
+	uint8 fuel;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	float heat;
+	uint8 heat;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	float moisture;
+	uint8 moisture;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	bool update;
@@ -84,9 +60,9 @@ struct FFireData {
 		fireState = EFireState::NONE;
 	}
 
-	FVector3f Pack() {
-		return { fuel, heat, moisture };
-	}
+	//FVector3f Pack() {
+	//	return { fuel, heat, moisture };
+	//}
 };
 
 USTRUCT(BlueprintType)
@@ -121,16 +97,16 @@ USTRUCT(BlueprintType)
 struct FFireRef {
 	GENERATED_BODY()
 
-	TWeakPtr<float> fuel;
-	TWeakPtr<float> heat;
-	TWeakPtr<float> moisture;
+	TWeakPtr<uint8> fuel;
+	TWeakPtr<uint8> heat;
+	TWeakPtr<uint8> moisture;
 	TWeakPtr<bool> update;
 	TWeakPtr<EFireState> fireState;
 
-	FFireRef(float& infuel, float& inheat, float& inmoisture, bool& inupdate, EFireState& infireState){
-		fuel = MakeShared<float>(infuel);
-		heat = MakeShared<float>(inheat);
-		moisture = MakeShared<float>(inmoisture);
+	FFireRef(uint8& infuel, uint8& inheat, uint8& inmoisture, bool& inupdate, EFireState& infireState){
+		fuel = MakeShared<uint8>(infuel);
+		heat = MakeShared<uint8>(inheat);
+		moisture = MakeShared<uint8>(inmoisture);
 		update = MakeShared<bool>(inupdate);
 		fireState = MakeShared<EFireState>(infireState);
 	}

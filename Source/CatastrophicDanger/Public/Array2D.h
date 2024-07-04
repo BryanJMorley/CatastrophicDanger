@@ -10,17 +10,15 @@ template <typename ElementType>
 class TArray2D
 {
 public:
-	int XSize = 0;
-	int YSize = 0;
+	int Size = 0;
 	TArray<ElementType>* Inner;
 
 public:
-	TArray2D<ElementType>(TArray<ElementType>& TargetArray, int InXSize, int InYSize)
+	TArray2D<ElementType>(TArray<ElementType>& TargetArray, int InSize)
 	{
-		XSize = InXSize;
-		YSize = InYSize;
+		Size = InSize;
 		Inner = &TargetArray;
-		Inner->SetNumZeroed(InXSize * InYSize);
+		Inner->SetNumZeroed(InSize*InSize);
 	}
 
 	TArray2D<ElementType>(TArray<ElementType>& TargetArray)
@@ -28,11 +26,10 @@ public:
 		Inner = &TargetArray;
 	}
 
-	void Init(TArray<ElementType>& TargetArray, int InXSize, int InYSize) {
-		XSize = InXSize;
-		YSize = InYSize;
+	void Init(TArray<ElementType>& TargetArray, int InSize) {
+		Size = InSize;
 		Inner = &TargetArray;
-		Inner->SetNumZeroed(InXSize * InYSize);
+		Inner->SetNumZeroed(InSize*InSize);
 	}
 	
 	ElementType& operator()(int i) {
@@ -40,25 +37,16 @@ public:
 	}
 	
 	ElementType& operator()(int iX, int iY) {
-		return Inner->GetData()[iX + iY*YSize];
+		return Inner->GetData()[iX + iY*Size];
 	}
-
-	//const ElementType& operator()(int iX, int iY) {
-	//	return Inner[iX + iY * YSize];
-	//}
-
 
 	ElementType& operator()(FIntPoint i) {
-		return Inner->GetData()[i.X + i.Y * YSize];
+		return Inner->GetData()[i.X + i.Y * Size];
 	}
-
-	//const ElementType& operator()(FIntPoint i) {
-	//	return Inner[i.X + i.Y * YSize];
-	//}
 
 	ElementType& operator()(const FHexPoint& i) {
 		FIntPoint coord = i.ToOffset();
-		return Inner->GetData()[coord.X+coord.Y*YSize];
+		return Inner->GetData()[coord.X+coord.Y*Size];
 	}
 	
 	/*
@@ -68,13 +56,13 @@ public:
 
 	inline int FlatIndex(const FHexPoint& i) const {
 		FIntPoint coord = i.ToOffset();
-		return coord.X + coord.Y * XSize;
+		return coord.X + coord.Y * Size;
 	}
 	inline int FlatIndex(FIntPoint& i) const {
-		return i.X + i.Y * XSize;
+		return i.X + i.Y * Size;
 	}
 	inline int FlatIndex(int ix, int iy) const {
-		return ix + iy * XSize;
+		return ix + iy * Size;
 	}
 
 };

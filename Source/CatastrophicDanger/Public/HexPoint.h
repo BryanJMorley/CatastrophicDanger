@@ -59,10 +59,26 @@ public:
 		Z = V.Z;
 	}
 
-	inline FIntPoint ToOffset() const {
+	FORCEINLINE FIntPoint ToOffset() const {
 		return { X, Y + (X - (X&1)) / 2};
 	}
 
+	//returns an array of all the adjacent hex tiles, starting from SouthEast going CounterClockwise
+	FORCEINLINE TArray <FHexPoint,TFixedAllocator<6>> HexAdjacent() const {
+		return { {X + 1, Y, Z - 1}, {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1},
+				 {X - 1, Y, Z + 1}, {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1} };
+	}
+	
+	//returns an array of all the adjacent hex tiles, starting from the current hex, then SouthEast going CounterClockwise
+	FORCEINLINE TArray <FHexPoint, TFixedAllocator<7>> HexRadius1() const {
+		return { {X,Y,Z}, { X + 1, Y, Z - 1 }, {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1},
+				 {X - 1, Y, Z + 1}, {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1} };
+	}
+
+	FORCEINLINE int Flatten(const int Size) const {
+		return X + (Y + (X - (X & 1)) / 2)*Size;
+	}
+	
 	/*inline FIntPoint ToOffset(FHexPoint inH) {
 		return { inH.X, inH.Y + (inH.X - (inH.X & 1)) / 2 };
 	}*/
