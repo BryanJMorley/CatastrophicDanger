@@ -33,6 +33,12 @@ public:
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
     static FHexPoint RoundToHex(FHexFrac H);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static int FlattenCoords(FIntPoint I, int Size);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FIntPoint IndexToCoord(int I, int Size);
 };
 
 

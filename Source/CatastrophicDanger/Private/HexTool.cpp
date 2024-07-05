@@ -41,6 +41,16 @@ FHexPoint UHexTool::RoundToHex(FHexFrac H) {
     return outHex;
 }
 
+int UHexTool::FlattenCoords(FIntPoint I, int Size)
+{
+    return I.X + I.Y*Size;
+}
+
+FIntPoint UHexTool::IndexToCoord(int I, int Size)
+{
+    return { (I % Size), (I / Size) };
+}
+
 FHexPoint UHexTool::makeHexPoint(FVector Pos) {
     return FIntVector(Pos);
 }
@@ -56,6 +66,8 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
      h.Z = -h.X - h.Y;
      return h;
  }
+
+
 
 //
 //FHexPoint UHexTool::AxialToOffset(FHexPoint Coords) {

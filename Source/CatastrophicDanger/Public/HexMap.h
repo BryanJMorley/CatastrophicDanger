@@ -105,10 +105,10 @@ public:
 	AHexTile* SpawnTile(FVector pos, FHexPoint Index);
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup", meta=(IsBindableEvent))
-	void TriggerTerrainUpdate();
+	void TriggerTerrainUpdate(bool DoMovement = false);
 
 	UFUNCTION(BlueprintCallable, Category = "TerrainGen")
-	void Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<float>& TargetArray, bool accuratePos = false, FVector2D range = FVector2D(-1,1));
+	FVector2f Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<float>& TargetArray, bool accuratePos = false, FVector2D range = FVector2D(-1,1));
 	
 	UFUNCTION(BlueprintCallable, Category = "TerrainGen")
 	void Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int>& TargetArray, FVector2D range = FVector2D(-1, 1), bool accuratePos = false);
@@ -153,7 +153,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
-	ETerrainType TerrainTypeSelector(const float& SoilQual, const float& Temp) const;
+	ETerrainType TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const;
 
 #pragma endregion Utilities
 

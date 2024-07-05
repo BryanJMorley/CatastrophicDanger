@@ -21,9 +21,7 @@ void AHexTile::Initialise(AHexMap* InMap, FHexPoint Index)
 	map = InMap;
 	tileCoords = Index;
 	tileIndex = InMap->HexToIndex(Index);
-	fireState = InMap->ArInnerFireState[tileIndex];
-	terrainData = InMap->GetTerrainData(Index);
-	map->OnTerrainUpdateDelegate.AddUObject(this, &AHexTile::OnTerrainUpdateDelegate);
+	map->OnTerrainUpdateDelegate.AddUObject(this, &AHexTile::OnTerrainUpdate);
 }
 
 #pragma region Updates
@@ -36,9 +34,10 @@ void AHexTile::UpdateTransform()
 	SetActorTransform(newTransform);
 }
 
-void AHexTile::OnTerrainUpdateDelegate(bool Transform) {
+void AHexTile::OnTerrainUpdate(bool Transform) {
 	GetTerrain();
 	if (Transform) UpdateTransform();
+	ReceiveTerrainUpdate();
 }
 
 
@@ -46,7 +45,6 @@ void AHexTile::GetTerrain()
 {
 	fireState = map->ArInnerFireState[tileIndex];
 	terrainData = map->GetTerrainData(tileCoords);
-
 }
 
 

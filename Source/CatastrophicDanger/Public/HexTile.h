@@ -43,8 +43,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Tile Update")
 	void GetTerrain();
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Update")
-	void OnTerrainUpdateDelegate(bool Transform);
+	UFUNCTION()
+	void OnTerrainUpdate(bool Transform = false);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tile Update", meta = (DisplayName = "OnTerrainUpdate"))
+	void ReceiveTerrainUpdate();
 
 
 

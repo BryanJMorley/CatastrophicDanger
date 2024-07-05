@@ -54,8 +54,8 @@ AHexTile* AHexMap::SpawnTile(FVector pos, FHexPoint Index) {
 	return newTile;
 }
 
-void AHexMap::TriggerTerrainUpdate() {
-	OnTerrainUpdateDelegate.Broadcast(true);
+void AHexMap::TriggerTerrainUpdate(bool DoMovement) {
+	OnTerrainUpdateDelegate.Broadcast(DoMovement);
 }
 
 void AHexMap::SpawnGrid() {
@@ -65,6 +65,7 @@ void AHexMap::SpawnGrid() {
 			FVector pos = UHexTool::HexToPos(IndexToHex(i), TileSize, ArInnerElevation[i]);
 			ArInnerTiles[i] = SpawnTile(pos, IndexToHex(i));
 		}
+		TriggerTerrainUpdate(false);
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("ARRAYS NOT INITIALISED!"))
@@ -85,21 +86,26 @@ void AHexMap::DestroyGrid() {
 
 #pragma region Noise2Array
 
-void AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<float>& TargetArray, bool accuratePos, FVector2D range) {
+FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<float>& TargetArray, bool accuratePos, FVector2D range) {
 	const bool rangeCheck = (range != FVector2D(-1, 1)); //check if we got given a non default range remap value
 	float newRangeMult = (range.Y - range.X) / 2.0f;
-	
+	FVector2f MinMax = { 0,0 };
+
 	if (!accuratePos) {
 			if (rangeCheck) { //Fast with Remapping
 				for (int i = 0; i < TargetArray.Num(); i++) {
 					FHexPoint coords = IndexToCoord(i);
 					TargetArray[i] = (Noise->GetNoise2D(coords.X, coords.Y)+1)*newRangeMult-range.X;
+					MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
+					MinMax.X = fminf(MinMax.X, TargetArray[i]);
 				}
 			}
 			else { //Fast without Remapping
 				for (int i = 0; i < TargetArray.Num(); i++) {
 					FHexPoint coords = IndexToCoord(i);
 					TargetArray[i] = Noise->GetNoise2D(coords.X, coords.Y);
+					MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
+					MinMax.X = fminf(MinMax.X, TargetArray[i]);
 				}
 			}
 	}
@@ -109,6 +115,8 @@ void AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<f
 				FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = (Noise->GetNoise2D(pos.X, pos.Y) + 1) * newRangeMult - range.X;
+				MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
+				MinMax.X = fminf(MinMax.X, TargetArray[i]);
 			}
 		}
 		else { //Accurate with Remapping
@@ -116,9 +124,12 @@ void AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<f
 				FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = Noise->GetNoise2D(pos.X, pos.Y);
+				MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
+				MinMax.X = fminf(MinMax.X, TargetArray[i]);
 			}
 		}
 	}
+	return MinMax;
 }
 
 void AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int>& TargetArray, FVector2D range, bool accuratePos) {
@@ -178,22 +189,26 @@ FTileRef AHexMap::MakeTileRef(int i) {
 	return tile;
 }
 
-ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp) const
+ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const
 {
-	
-	if (SoilQual < -0.3f) {
-		if (Temp < -0.3f) {
+	float SoilLow = RangeSoil.X + (RangeSoil.Y - RangeSoil.X) / 3.0f;
+	float SoilMed = RangeSoil.X + 2 * (RangeSoil.Y - RangeSoil.X) / 3.0f;
+	float TempLow = RangeTemp.X + (RangeTemp.Y - RangeTemp.X) / 3.0f;
+	float TempMed = RangeTemp.X + 2*(RangeTemp.Y - RangeTemp.X) / 3.0f;
+
+	if (SoilQual < SoilLow) {
+		if (Temp < TempLow) {
 			return ETerrainType::GRASSLAND;
 		}
 		else {
 			return ETerrainType::SHRUBLAND;
 		}
 	}
-	else if(SoilQual < 0.3f) {
-		if (Temp < -0.3f) {
+	else if(SoilQual < SoilMed) {
+		if (Temp < TempLow) {
 			return ETerrainType::WETFOREST;
 		}
-		else if (Temp < 0.3f) {
+		else if (Temp < TempMed) {
 			return ETerrainType::DRYFOREST;
 		}
 		else {
@@ -201,17 +216,16 @@ ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Te
 		}
 	}
 	else {
-		if (Temp < -0.3f) {
+		if (Temp < TempLow) {
 			return ETerrainType::PINEFOREST;
 		}
-		else if (Temp < 0.3f) {
+		else if (Temp < TempMed) {
 			return ETerrainType::WETFOREST;
 		}
 		else {
 			return ETerrainType::DRYFOREST;
 		}
 	}
-	return ETerrainType::NONE;
 }
 
 #pragma region getData 
