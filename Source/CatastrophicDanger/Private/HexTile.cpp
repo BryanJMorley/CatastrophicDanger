@@ -15,7 +15,6 @@ AHexTile::AHexTile()
 	//tileMesh = nullptr;
 }
 
-
 void AHexTile::Initialise(AHexMap* InMap, FHexPoint Index)
 {
 	map = InMap;
@@ -27,26 +26,41 @@ void AHexTile::Initialise(AHexMap* InMap, FHexPoint Index)
 #pragma region Updates
 void AHexTile::UpdateTransform()
 {
-	terrainData.elevation = map->ArInnerElevation[tileIndex];
+	terrainData.elevation = map->ArElevation[tileIndex];
 	FTransform newTransform = GetActorTransform();
 	FVector CurrentPos = newTransform.GetTranslation();
-	newTransform.SetLocation({CurrentPos.X, CurrentPos.Y, terrainData.elevation });
+	newTransform.SetLocation({ CurrentPos.X, CurrentPos.Y, (terrainData.elevation * map->ElevationHeightSeperation) });
 	SetActorTransform(newTransform);
 }
 
 void AHexTile::OnTerrainUpdate(bool Transform) {
 	GetTerrain();
 	if (Transform) UpdateTransform();
+	EFireState UpdatedFire = map->ArFireState[tileCoords.Flatten(map->MapSize)];
+	if (UpdatedFire != fireState) {
+
+		if (UpdatedFire == EFireState::BURNING) {
+			fireState = UpdatedFire;
+			ReceiveStartBurning();
+		}
+		if (UpdatedFire == EFireState::BURNT) {
+			fireState = UpdatedFire;
+			ReceiveStopBurning();
+		}
+	}
 	ReceiveTerrainUpdate();
 }
 
-
 void AHexTile::GetTerrain()
 {
-	fireState = map->ArInnerFireState[tileIndex];
+	fireState = map->ArFireState[tileIndex];
 	terrainData = map->GetTerrainData(tileCoords);
 }
 
+FFireData AHexTile::GetFire() const
+{
+	return map->GetFireData(tileCoords);
+}
 
 #pragma endregion Updates
 

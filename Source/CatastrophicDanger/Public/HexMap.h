@@ -8,12 +8,14 @@
 #include "GameFramework/Actor.h"
 #include "TerrainStructs.h"
 #include <Delegates/DelegateCombinations.h>
+#include "CDGameState.h"
 #include "HexMap.generated.h"
 
 
 class AHexTile;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FTerrainUpdateSignature, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMapSetupCompleteSignature, EMapProgress);
 
 #pragma region ClassBody
 UCLASS(Blueprintable, Placeable)
@@ -29,57 +31,61 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
 	int MapSize;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties") 
 	float TileSize;
-#pragma endregion MapVariables
 
-#pragma region MapMeta	
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Map Properties")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Map Properties")
+	float ElevationHeightSeperation;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Map Properties")
 	TSubclassOf<AHexTile> TileClass = nullptr;
-	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = "Map Properties", meta = (Bitmask, BitmaskEnum = EMapProgress))
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Map Properties|Fire Settings")
+	UCurveTable* FireGradientMaps = nullptr;
+	
+	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = "Map Properties", meta = (Bitmask, BitmaskEnum = "/Script/CatastrophicDanger.EMapProgress"))
 	int32 MapSetupState = 0;
 
-#pragma endregion MapMeta	
+#pragma endregion MapVariables
+
+#pragma region DataArrays
+	//Arrays to hold all the data. Structs are made to reference to it weakly, but it all stays here, which makes certain 
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fuel"))
+	TArray<int> ArFuel;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Heat"))
+	TArray<int> ArHeat;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
+	TArray<int> ArMoisture;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tile Update"))
+	TArray<bool> ArUpdate;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Elevation"))
+	TArray<int> ArElevation;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Terrain Type"))
+	TArray<ETerrainType> ArTerrainType;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fire State"))
+	TArray<EFireState> ArFireState;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Gradient"))
+	TArray<FGradientMap> ArGradient;
+	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tiles"))
+	TArray<AHexTile*> ArTiles;
+
+#pragma endregion DataArrays
 
 #pragma region Delegates
 
 	FTerrainUpdateSignature OnTerrainUpdateDelegate;
 
+	UFUNCTION(BlueprintCallable, Category = "Map Setup")
+	void TriggerTerrainUpdate(bool DoMovement = false);
+
+	FMapSetupCompleteSignature OnMapSetupCompleteDelegate;
+
+	UFUNCTION(BlueprintCallable, Category = "Map Setup")
+	void TriggerMapSetupComplete(EMapProgress Progress);
+
+
 #pragma endregion Delegates
-
-#pragma region DataArrays
-	//Arrays to hold all the data. Structs are made to reference to it weakly, but it all stays here, which makes certain 
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fuel"))
-	TArray<uint8> ArInnerFuel;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Heat"))
-	TArray<uint8> ArInnerHeat;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
-	TArray<uint8> ArInnerMoisture;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tile Update"))
-	TArray<bool> ArInnerUpdate;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Elevation"))
-	TArray<float> ArInnerElevation;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Terrain Type"))
-	TArray<ETerrainType> ArInnerTerrainType;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fire State"))
-	TArray<EFireState> ArInnerFireState;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Gradient"))
-	TArray<FVector2D> ArInnerGradient;
-	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tiles"))
-	TArray<AHexTile*> ArInnerTiles;
-
-	//Construct 2D Array Wrappers around them all
-	TArray2D<uint8> Ar2Fuel = { ArInnerFuel };
-	TArray2D<uint8> Ar2Heat = { ArInnerHeat };
-	TArray2D<uint8> Ar2Moisture = { ArInnerMoisture };
-	TArray2D<bool> Ar2Update = { ArInnerUpdate };
-	TArray2D<float> Ar2Elevation = { ArInnerElevation };
-	TArray2D<ETerrainType> Ar2TerrainType = { ArInnerTerrainType };
-	TArray2D<EFireState> Ar2FireState = { ArInnerFireState };
-	TArray2D<FVector2D> Ar2Gradient = { ArInnerGradient };
-	TArray2D<AHexTile*> Ar2Tiles = { ArInnerTiles };
-#pragma endregion DataArrays
 
 #pragma endregion Properties
 
@@ -96,6 +102,9 @@ public:
 	void InitialiseGrids();
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
+	void FillFhmFromTerrainTable(UDataTable* InTable);
+
+	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	void SpawnGrid();
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
@@ -104,14 +113,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Terrain Gen", meta = (AutoCreateRefTerm = "InTileData"))
 	AHexTile* SpawnTile(FVector pos, FHexPoint Index);
 
-	UFUNCTION(BlueprintCallable, Category = "Map Setup", meta=(IsBindableEvent))
-	void TriggerTerrainUpdate(bool DoMovement = false);
+	UFUNCTION(BlueprintCallable, Category = "Terrain Gen")
+	void CalculateGradient();
 
+	UFUNCTION(BlueprintCallable, Category = "Fire Sim")
+	void QueueBurningTiles();
+
+	//setup the FireSystem with the info we need that we need for doing the actual simulation
+	UFUNCTION(BlueprintCallable)
+	void SetupFireSystem(UFireSystem* FireSys);
+	
+#pragma region NoiseFunctions
+	
 	UFUNCTION(BlueprintCallable, Category = "TerrainGen")
 	FVector2f Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<float>& TargetArray, bool accuratePos = false, FVector2D range = FVector2D(-1,1));
 	
 	UFUNCTION(BlueprintCallable, Category = "TerrainGen")
-	void Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int>& TargetArray, FVector2D range = FVector2D(-1, 1), bool accuratePos = false);
+	FIntPoint Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int>& TargetArray, bool accuratePos, FVector2D range = FVector2D(-1, 1));
+
+	//TODO: ACCURATE REMAP NOISE FUNCTION HERE
+
+#pragma endregion NoiseFunctions
 
 #pragma region GetData
 	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
@@ -138,6 +160,11 @@ public:
 	FORCEINLINE int HexToIndex(const FHexPoint& Index) const {
 		FIntPoint coord = Index.ToOffset();
 		return coord.X + coord.Y * MapSize;
+	}
+
+	FORCEINLINE bool HexInBounds(const FHexPoint& Index) const {
+		FIntPoint coord = Index.ToOffset();
+		return (coord.X >= 0 && coord.X < MapSize && coord.Y >= 0 && coord.Y < MapSize);
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")

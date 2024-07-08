@@ -10,7 +10,6 @@ void UWeatherController::WeatherUpdate()
 	WindStrength = FMath::Clamp(WindStrength+FMath::RandRange(-1, 1), 0, 3);
 	WindDir = FMath::Abs(FMath::Modulo(WindDir + FMath::RandRange(-1, 1), 6));
 	OnWeatherUpdateDelegate.Broadcast();
-
 }
 
 UWeatherController::UWeatherController()

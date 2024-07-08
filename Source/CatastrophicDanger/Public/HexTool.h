@@ -39,6 +39,12 @@ public:
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
     static FIntPoint IndexToCoord(int I, int Size);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint IndexToHex(const int& Index, int Size) {
+        FHexPoint coord = { (Index % Size), (Index / Size) };
+        return coord;
+    }
 };
 
 
