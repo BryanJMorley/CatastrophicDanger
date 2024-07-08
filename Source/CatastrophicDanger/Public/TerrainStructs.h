@@ -7,10 +7,34 @@
 #include "CDEnums.h"
 #include "TerrainStructs.generated.h"
 
-
 //Forward Declarations
 class AHexTile;
 class AHexMap;
+
+
+USTRUCT(BlueprintType)
+struct FGradientMap {
+	GENERATED_BODY()
+
+	TArray<int8, TFixedAllocator<7>> GradientMap;
+
+	FGradientMap() {
+		GradientMap.Init(0, 7);
+	}
+
+	FGradientMap(int8 Fill) {
+		GradientMap.Init(Fill, 7);
+	}
+
+	int8& operator[](int i) {
+		return GradientMap[i];
+	}
+
+	void operator=(int i) {
+		GradientMap.Init(i, 7);
+	}
+
+};
 
 USTRUCT(BlueprintType)
 struct FTerrainData {
@@ -20,15 +44,14 @@ struct FTerrainData {
 	ETerrainType terrainType;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	float elevation;
+	int elevation;
 
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	FVector2D gradient;
+	FGradientMap Gradient;
 
 	FTerrainData() {
 		terrainType = ETerrainType::NONE;
-		elevation = 0.0;
-		gradient = { 0.0, 1.0 };
+		elevation = 0;
+		Gradient;
 	}
 
 };
@@ -38,13 +61,13 @@ struct FFireData {
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	uint8 fuel;
+	int fuel;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	uint8 heat;
+	int heat;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	uint8 moisture;
+	int moisture;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	bool update;
@@ -89,7 +112,6 @@ struct FTileData {
 	}
 };
 
-
 // Dont think I need this actually, delete later
 
 
@@ -97,16 +119,16 @@ USTRUCT(BlueprintType)
 struct FFireRef {
 	GENERATED_BODY()
 
-	TWeakPtr<uint8> fuel;
-	TWeakPtr<uint8> heat;
-	TWeakPtr<uint8> moisture;
+	TWeakPtr<int> fuel;
+	TWeakPtr<int> heat;
+	TWeakPtr<int> moisture;
 	TWeakPtr<bool> update;
 	TWeakPtr<EFireState> fireState;
 
-	FFireRef(uint8& infuel, uint8& inheat, uint8& inmoisture, bool& inupdate, EFireState& infireState){
-		fuel = MakeShared<uint8>(infuel);
-		heat = MakeShared<uint8>(inheat);
-		moisture = MakeShared<uint8>(inmoisture);
+	FFireRef(int& infuel, int& inheat, int& inmoisture, bool& inupdate, EFireState& infireState){
+		fuel = MakeShared<int>(infuel);
+		heat = MakeShared<int>(inheat);
+		moisture = MakeShared<int>(inmoisture);
 		update = MakeShared<bool>(inupdate);
 		fireState = MakeShared<EFireState>(infireState);
 	}
@@ -127,16 +149,16 @@ struct FTerrainRef {
 	GENERATED_BODY()
 
 	TWeakPtr<ETerrainType> terrainType;
-	TWeakPtr<float> elevation;
-	TWeakPtr<FVector2D> gradient;
+	TWeakPtr<int> elevation;
+	TWeakPtr<FGradientMap> Gradient;
 
-	FTerrainRef(ETerrainType& inTerrainType, float& inElevation, FVector2D& inGradient){
+	FTerrainRef(ETerrainType& inTerrainType, int& inElevation, FGradientMap& inGradient){
 		terrainType = MakeShared<ETerrainType>(inTerrainType);
-		elevation = MakeShared<float>(inElevation);
-		gradient = MakeShared<FVector2D>(inGradient);
+		elevation = MakeShared<int>(inElevation);
+		Gradient = MakeShared<FGradientMap>(inGradient);
 	}
 
-	FTerrainRef() : terrainType(nullptr), elevation(nullptr), gradient(nullptr) {}
+	FTerrainRef() : terrainType(nullptr), elevation(nullptr), Gradient(nullptr) {}
 
 };
 
@@ -157,11 +179,32 @@ struct FTileRef {
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FTileFhmStartValues : public FTableRowBase {
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int Fuel = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int Heat = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int Moisture = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int FuelRange = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int HeatRange = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int MoistureRange = 0;
+};
+
 UCLASS()
 class CATASTROPHICDANGER_API UTileStructs : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Gradient To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "Tile Data")
+	static FString Conv_GradientToString(FGradientMap GData);
+
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Terrain To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "Tile Data")
 	static FString Conv_TerrainToString(FTerrainData TData);
 

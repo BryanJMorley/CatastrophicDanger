@@ -63,20 +63,27 @@ public:
 		return { X, Y + (X - (X&1)) / 2};
 	}
 
-	//returns an array of all the adjacent hex tiles, starting from SouthEast going CounterClockwise
+	//returns an array of all the adjacent hex tiles, starting from NorthEast going CounterClockwise
+	//where north is asummed to be -Y
 	FORCEINLINE TArray <FHexPoint,TFixedAllocator<6>> HexAdjacent() const {
-		return { {X + 1, Y, Z - 1}, {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1},
-				 {X - 1, Y, Z + 1}, {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1} };
+		return { {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1}, {X - 1, Y, Z + 1}, 
+				 {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1}, {X + 1, Y, Z - 1} };
 	}
 	
-	//returns an array of all the adjacent hex tiles, starting from the current hex, then SouthEast going CounterClockwise
+	//returns an array of all the adjacent hex tiles, starting from the current hex, then NorthEast going CounterClockwise
+	//where north is asummed to be -Y
 	FORCEINLINE TArray <FHexPoint, TFixedAllocator<7>> HexRadius1() const {
-		return { {X,Y,Z}, { X + 1, Y, Z - 1 }, {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1},
-				 {X - 1, Y, Z + 1}, {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1} };
+		return { {X,Y,Z}, {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1}, {X - 1, Y, Z + 1}, 
+						  {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1}, {X + 1, Y, Z - 1}};
 	}
 
 	FORCEINLINE int Flatten(const int Size) const {
 		return X + (Y + (X - (X & 1)) / 2)*Size;
+	}
+
+	FORCEINLINE bool InBounds(const int size) const {
+		FIntPoint coord = ToOffset();
+		return (coord.X >= 0 && coord.X < size && coord.Y >= 0 && coord.Y < size);
 	}
 	
 	/*inline FIntPoint ToOffset(FHexPoint inH) {
@@ -84,6 +91,7 @@ public:
 	}*/
 
 };
+
 
 USTRUCT(BlueprintType)
 struct FHexFrac : public FVector {
@@ -144,3 +152,16 @@ FHexPoint const QR();
 UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Coord Conversion")
 FIntVector3 const QRS();
 */
+
+
+UCLASS(Abstract)
+class CATASTROPHICDANGER_API UHexPointStatic : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+public:
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "HexPoint To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "HexTools")
+	static FString Conv_HexToString(FHexPoint Hpoint);
+	
+	UFUNCTION(BlueprintPure, Category = "HexTools", meta = (DisplayName = "Print Adjacent Hex Coords"))
+	static FString PrintAdjacentTiles(FHexPoint Hpoint, int MapSize = 0);
+};

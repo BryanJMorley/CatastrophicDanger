@@ -25,64 +25,172 @@ AHexMap::AHexMap()
 void AHexMap::BeginPlay()
 {	
 	InitialiseGrids();
+	UFireSystem* const FireSys = (UFireSystem*)GetWorld()->GetSubsystem<UFireSystem>();
+	SetupFireSystem(FireSys);
+	//ACDGameState* const GameState = (ACDGameState*)GetWorld()->GetGameState();
+
 	Super::BeginPlay();
 }
 
 // Called every frame
 void AHexMap::Tick(float DeltaTime)
 {
+
+
 	Super::Tick(DeltaTime);
 }
 
+#pragma region MapSetup
+
 void AHexMap::InitialiseGrids() {
-	Ar2Fuel.Init(ArInnerFuel, MapSize);
-	Ar2Heat.Init(ArInnerHeat, MapSize);
-	Ar2Moisture.Init(ArInnerMoisture, MapSize);
-	Ar2Update.Init(ArInnerUpdate, MapSize);
-	Ar2Elevation.Init(ArInnerElevation, MapSize);
-	Ar2TerrainType.Init(ArInnerTerrainType, MapSize);
-	Ar2FireState.Init(ArInnerFireState, MapSize);
-	Ar2Gradient.Init(ArInnerGradient, MapSize);
-	Ar2Tiles.Init(ArInnerTiles, MapSize);
+	int MapSize2 = MapSize * MapSize;
+	ArFuel.Init(0, MapSize2);
+	ArHeat.Init(0, MapSize2);
+	ArMoisture.Init(0, MapSize2);
+	ArUpdate.Init(false, MapSize2);
+	ArElevation.Init(0, MapSize2);
+	ArTerrainType.Init(ETerrainType::NONE, MapSize2);
+	ArFireState.Init(EFireState::NONE, MapSize2);
+	ArTiles.Init(nullptr, MapSize2);
+	ArGradient.Init(FGradientMap(1), MapSize2);
 	MapSetupState = MapSetupState|int(EMapProgress::INITARRAYS);
 }
 
-AHexTile* AHexMap::SpawnTile(FVector pos, FHexPoint Index) {
-	if (TileClass == nullptr) return nullptr;
-	AHexTile* newTile = GetWorld()->SpawnActor<AHexTile>(TileClass, pos, { 0,0,0 });
-	newTile->Initialise(this, Index);
-	return newTile;
+void AHexMap::SetupFireSystem(UFireSystem* FireSys)
+{
+	FireSys->MapSize = MapSize;
+	FireSys->Map = this;
+	FireSys->ArFireBuffer.Init({ 0,0,0 }, MapSize*MapSize);
+	UE_LOG(LogFire, Display, TEXT("Fire Map Linked to: %s Object"), *(this->GetName()));
+	FireSys->FireGradientMaps = FireGradientMaps;
+	UE_LOG(LogFire, Display, TEXT("Gradient Maps: %s"), *(FireGradientMaps->GetName()));
+	FireSys->Active = true;
 }
 
-void AHexMap::TriggerTerrainUpdate(bool DoMovement) {
-	OnTerrainUpdateDelegate.Broadcast(DoMovement);
+void AHexMap::FillFhmFromTerrainTable(UDataTable* InTable)
+{
+	if (MapSetupState & int(EMapProgress::INITARRAYS)) {
+		for (int i = 0; i < MapSize * MapSize; i++) {
+			FTileFhmStartValues* FHM = InTable->FindRow<FTileFhmStartValues>(UEnum::GetValueAsName(ArTerrainType[i]), "HexMap::FillFhmFromTerrainTable", true);
+			if (FHM) {
+				ArFuel[i] = FHM->Fuel;
+				ArHeat[i] = FHM->Heat;
+				ArMoisture[i] = FHM->Moisture;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("FAILED TO FIND ROW"));
+				break;
+			}
+		}
+		MapSetupState = MapSetupState|int(EMapProgress::FILLDATA);
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("ARRAYS NOT INITIALISED!"));
+	}
 }
+
+void AHexMap::CalculateGradient()
+{
+	if (MapSetupState & int(EMapProgress::INITARRAYS)) { //bitmask check we've setup the arrays
+		for (int i = 0; i < MapSize * MapSize; i++)
+		{	//for each grid cell
+			TArray<FHexPoint, TFixedAllocator<7>> Adj = IndexToHex(i).HexRadius1(); //get the neighbor cells,
+			for (int ii = 0; ii < 7; ii++) {
+				int AdjIndex = Adj[ii].Flatten(MapSize); //for each of those,
+				if (HexInBounds(Adj[ii])) { //if they are inside the map
+					ArGradient[i][ii] = ArElevation[Adj[ii].Flatten(MapSize)]- ArElevation[i]; //store the diff in elevation.
+					//ArGradient[i][ii++] the ii++ is so we skip the first array element, which is mostly there to make alignment easier with the wind array.
+				}
+				else {
+					ArGradient[i][ii] = INT8_MIN; //if its out of bounds, set it to int8 min
+				}
+			}
+			ArGradient[i][0] = 1; //set the 'self' gradient to one, which keeps things neat.
+		}
+	}
+}
+
+void AHexMap::QueueBurningTiles()
+{
+	UFireSystem* const FireSys = (UFireSystem*)GetWorld()->GetSubsystem<UFireSystem>();
+
+	for (int i = 0; i < MapSize * MapSize; i++) {
+		if (ArFireState[i] == EFireState::BURNING) {
+			FireSys->QueueTile(i);
+		}
+	}
+}
+
+
+ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const
+{
+	float SoilLow = RangeSoil.X + (RangeSoil.Y - RangeSoil.X) / 3.0f;
+	float SoilMed = RangeSoil.X + 2 * (RangeSoil.Y - RangeSoil.X) / 3.0f;
+	float TempLow = RangeTemp.X + (RangeTemp.Y - RangeTemp.X) / 3.0f;
+	float TempMed = RangeTemp.X + 2 * (RangeTemp.Y - RangeTemp.X) / 3.0f;
+
+	if (SoilQual < SoilLow) {
+		if (Temp < TempLow) {
+			return ETerrainType::GRASSLAND;
+		}
+		else {
+			return ETerrainType::SHRUBLAND;
+		}
+	}
+	else if (SoilQual < SoilMed) {
+		if (Temp < TempLow) {
+			return ETerrainType::WETFOREST;
+		}
+		else if (Temp < TempMed) {
+			return ETerrainType::DRYFOREST;
+		}
+		else {
+			return ETerrainType::GRASSLAND;
+		}
+	}
+	else {
+		if (Temp < TempLow) {
+			return ETerrainType::PINEFOREST;
+		}
+		else if (Temp < TempMed) {
+			return ETerrainType::WETFOREST;
+		}
+		else {
+			return ETerrainType::DRYFOREST;
+		}
+	}
+}
+
+#pragma endregion MapSetup
+
+#pragma region MapSpawning
 
 void AHexMap::SpawnGrid() {
-	if (MapSetupState & int(EMapProgress::INITARRAYS)) {
+	if (MapSetupState & int(EMapProgress::INITARRAYS)) { //bitmask check we've setup the arrays
 		for (int i = 0; i < MapSize*MapSize; i++)
 		{
-			FVector pos = UHexTool::HexToPos(IndexToHex(i), TileSize, ArInnerElevation[i]);
-			ArInnerTiles[i] = SpawnTile(pos, IndexToHex(i));
+			FVector pos = UHexTool::HexToPos(IndexToHex(i), TileSize, ArElevation[i]* ElevationHeightSeperation);
+			ArTiles[i] = SpawnTile(pos, IndexToHex(i));
 		}
+		MapSetupState = MapSetupState|int(EMapProgress::SPAWNTILES);
 		TriggerTerrainUpdate(false);
+
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("ARRAYS NOT INITIALISED!"))
 	}
 }
 
-void AHexMap::DestroyGrid() {
-	//Delete all Tiles of Tile Class first
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), TileClass, FoundActors);
-	for (AActor* ActorFound : FoundActors)
-	{
-		ActorFound->Destroy();
-	}
-	//then fill the grid with nullptr
-	ArInnerTiles.SetNumZeroed(MapSize*MapSize);
+AHexTile* AHexMap::SpawnTile(FVector pos, FHexPoint Index) {
+	if (TileClass == nullptr) return nullptr;
+	AHexTile* newTile = GetWorld()->SpawnActor<AHexTile>(TileClass, pos, { 0,0,0 });
+	newTile->Initialise(this, Index);
+	newTile->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	return newTile;
 }
+
+#pragma endregion MapSpawning
 
 #pragma region Noise2Array
 
@@ -132,21 +240,26 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 	return MinMax;
 }
 
-void AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int>& TargetArray, FVector2D range, bool accuratePos) {
+FIntPoint AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int>& TargetArray, bool accuratePos, FVector2D range) {
 	const bool rangeCheck = (range != FVector2D(-1, 1)); //check if we got given a non default range remap value
 	float newRangeMult = (range.Y - range.X) / 2.0f;
+	FIntPoint MinMax = { 0,0 };
 
 	if (!accuratePos) {
 		if (rangeCheck) { //Fast with Remapping
 			for (int i = 0; i < TargetArray.Num(); i++) {
 				FHexPoint coords = IndexToCoord(i);
 				TargetArray[i] = int((Noise->GetNoise2D(coords.X, coords.Y) + 1) * newRangeMult - range.X);
+				MinMax.Y = std::max(MinMax.Y, TargetArray[i]);
+				MinMax.X = std::max(MinMax.X, TargetArray[i]);
 			}
 		}
 		else { //Fast without Remapping
 			for (int i = 0; i < TargetArray.Num(); i++) {
 				FHexPoint coords = IndexToCoord(i);
 				TargetArray[i] = int(Noise->GetNoise2D(coords.X, coords.Y));
+				MinMax.Y = std::max(MinMax.Y, TargetArray[i]);
+				MinMax.X = std::max(MinMax.X, TargetArray[i]);
 			}
 		}
 	}
@@ -156,6 +269,8 @@ void AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int
 				FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = int((Noise->GetNoise2D(pos.X, pos.Y) + 1) * newRangeMult - range.X);
+				MinMax.Y = std::max(MinMax.Y, TargetArray[i]);
+				MinMax.X = std::max(MinMax.X, TargetArray[i]);
 			}
 		}
 		else { //Accurate with Remapping
@@ -163,106 +278,99 @@ void AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArray<int
 				FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = int(Noise->GetNoise2D(pos.X, pos.Y));
+				MinMax.Y = std::max(MinMax.Y, TargetArray[i]);
+				MinMax.X = std::max(MinMax.X, TargetArray[i]);
 			}
 		}
 	}
+	return MinMax;
 }
 
 #pragma endregion Noise2Array
 
+#pragma region tileDataStructs
+
 FTileRef AHexMap::MakeTileRef(FHexPoint Index) {
 	int i = HexToIndex(Index);
 	FTileRef tile;
-	tile.terrainRef = FTerrainRef(ArInnerTerrainType[i], ArInnerElevation[i], ArInnerGradient[i]);
-	tile.fireRef = FFireRef(ArInnerFuel[i], ArInnerHeat[i], ArInnerMoisture[i], ArInnerUpdate[i], ArInnerFireState[i]);
-	tile.tile = ArInnerTiles[i];
+	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
+	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
+	tile.tile = ArTiles[i];
 	tile.tileCoords = Index;
 	return tile;
 }
 
 FTileRef AHexMap::MakeTileRef(int i) {
 	FTileRef tile;
-	tile.terrainRef = FTerrainRef(ArInnerTerrainType[i], ArInnerElevation[i], ArInnerGradient[i]);
-	tile.fireRef = FFireRef(ArInnerFuel[i], ArInnerHeat[i], ArInnerMoisture[i], ArInnerUpdate[i], ArInnerFireState[i]);
-	tile.tile = ArInnerTiles[i];
+	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
+	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
+	tile.tile = ArTiles[i];
 	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
 	return tile;
 }
 
-ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const
-{
-	float SoilLow = RangeSoil.X + (RangeSoil.Y - RangeSoil.X) / 3.0f;
-	float SoilMed = RangeSoil.X + 2 * (RangeSoil.Y - RangeSoil.X) / 3.0f;
-	float TempLow = RangeTemp.X + (RangeTemp.Y - RangeTemp.X) / 3.0f;
-	float TempMed = RangeTemp.X + 2*(RangeTemp.Y - RangeTemp.X) / 3.0f;
-
-	if (SoilQual < SoilLow) {
-		if (Temp < TempLow) {
-			return ETerrainType::GRASSLAND;
-		}
-		else {
-			return ETerrainType::SHRUBLAND;
-		}
-	}
-	else if(SoilQual < SoilMed) {
-		if (Temp < TempLow) {
-			return ETerrainType::WETFOREST;
-		}
-		else if (Temp < TempMed) {
-			return ETerrainType::DRYFOREST;
-		}
-		else {
-			return ETerrainType::GRASSLAND;
-		}
-	}
-	else {
-		if (Temp < TempLow) {
-			return ETerrainType::PINEFOREST;
-		}
-		else if (Temp < TempMed) {
-			return ETerrainType::WETFOREST;
-		}
-		else {
-			return ETerrainType::DRYFOREST;
-		}
-	}
-}
+#pragma endregion tileDataStructs
 
 #pragma region getData 
 FTileData AHexMap::GetTileData(const FHexPoint& Index) {
-	int fI = HexToIndex(Index);
+	int flat = Index.Flatten(MapSize);
 	FTileData tile;
-	tile.terrainData.terrainType = Ar2TerrainType(fI);
-	tile.terrainData.elevation = Ar2Elevation(fI);
-	tile.terrainData.gradient = Ar2Gradient(fI);
-	tile.fireData.fuel = Ar2Fuel(fI);
-	tile.fireData.heat = Ar2Heat(fI);
-	tile.fireData.moisture = Ar2Moisture(fI);
-	tile.fireData.fireState = Ar2FireState(fI);
-	tile.tile = Ar2Tiles(fI);
+	tile.terrainData.terrainType = ArTerrainType[flat];
+	tile.terrainData.elevation = ArElevation[flat];
+	tile.terrainData.Gradient = ArGradient[flat];
+	tile.fireData.fuel = ArFuel[flat];
+	tile.fireData.heat = ArHeat[flat];
+	tile.fireData.moisture = ArMoisture[flat];
+	tile.fireData.fireState = ArFireState[flat];
+	tile.tile = ArTiles[flat];
 	tile.tileCoords = Index;
 	return tile;
 }
 
 FFireData AHexMap::GetFireData(const FHexPoint& Index) {
-	int fI = HexToIndex(Index);
+	int flat = Index.Flatten(MapSize);
 	FFireData tile;
-	tile.fuel = Ar2Fuel(fI);
-	tile.heat = Ar2Heat(fI);
-	tile.moisture = Ar2Moisture(fI);
-	tile.fireState = Ar2FireState(fI);
+	tile.fuel = ArFuel[flat];
+	tile.heat = ArHeat[flat];
+	tile.moisture = ArMoisture[flat];
+	tile.fireState = ArFireState[flat];
 	return tile;
 }
 
 FTerrainData AHexMap::GetTerrainData(const FHexPoint& Index) {
-	int fI = HexToIndex(Index);
+	int flat = Index.Flatten(MapSize);
 	FTerrainData tile;
-	tile.terrainType = Ar2TerrainType(fI);
-	tile.elevation = Ar2Elevation(fI);
-	tile.gradient = Ar2Gradient(fI);
+	tile.terrainType = ArTerrainType[flat];
+	tile.elevation = ArElevation[flat];
+	tile.Gradient = ArGradient[flat];
 	return tile;
 }
 #pragma endregion getData 
+
+#pragma region DelegateTriggers
+
+void AHexMap::TriggerTerrainUpdate(bool DoMovement) {
+	OnTerrainUpdateDelegate.Broadcast(DoMovement);
+}
+
+void AHexMap::TriggerMapSetupComplete(EMapProgress Progress)
+{
+	OnMapSetupCompleteDelegate.Broadcast(Progress);
+}
+
+#pragma endregion DelegateTriggers
+
+void AHexMap::DestroyGrid() {
+	//Delete all Tiles of Tile Class first
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), TileClass, FoundActors);
+	for (AActor* ActorFound : FoundActors)
+	{
+		ActorFound->Destroy();
+	}
+	//then fill the grid with nullptr
+	ArTiles.SetNumZeroed(MapSize * MapSize);
+}
 
 //bool AHexMap::SetTileData(const FHexPoint& Index, const FTileData& data) {
 	//tilesAll(Index) = data;
