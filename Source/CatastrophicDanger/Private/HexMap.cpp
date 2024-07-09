@@ -72,9 +72,13 @@ void AHexMap::FillFhmFromTerrainTable(UDataTable* InTable)
 		for (int i = 0; i < MapSize * MapSize; i++) {
 			FTileFhmStartValues* FHM = InTable->FindRow<FTileFhmStartValues>(UEnum::GetValueAsName(ArTerrainType[i]), "HexMap::FillFhmFromTerrainTable", true);
 			if (FHM) {
-				ArFuel[i] = FHM->Fuel;
-				ArHeat[i] = FHM->Heat;
-				ArMoisture[i] = FHM->Moisture;
+				/*const FVector coords = IndexToCoord3(i);
+				ArFuel[i] = FHM->Fuel + FMath::Lerp(-FHM->FuelRange.X, FHM->FuelRange.Y, (1+FMath::PerlinNoise3D(coords))/2.0f);
+				ArHeat[i] = FHM->Heat + FMath::Lerp(-FHM->HeatRange.X, FHM->HeatRange.Y, (1+FMath::PerlinNoise3D(coords + 1))/2.0f);
+				ArMoisture[i] = FHM->Moisture + FMath::Lerp(-FHM->MoistureRange.X, FHM->MoistureRange.Y, (1+FMath::PerlinNoise3D(coords + 2))/2.0f);*/
+				ArFuel[i] = FHM->Fuel + FMath::FRandRange(-FHM->FuelRange.X, FHM->FuelRange.Y);
+				ArHeat[i] = FHM->Heat + FMath::FRandRange(-FHM->HeatRange.X, FHM->HeatRange.Y);
+				ArMoisture[i] = FHM->Moisture + FMath::FRandRange(-FHM->MoistureRange.X, FHM->MoistureRange.Y);
 			}
 			else
 			{
@@ -200,7 +204,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 	if (!accuratePos) {
 			if (rangeCheck) { //Fast with Remapping
 				for (int i = 0; i < TargetArray.Num(); i++) {
-					FHexPoint coords = IndexToCoord(i);
+					const FHexPoint coords = IndexToCoord(i);
 					TargetArray[i] = (Noise->GetNoise2D(coords.X, coords.Y)+1)*newRangeMult-range.X;
 					MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
 					MinMax.X = fminf(MinMax.X, TargetArray[i]);
@@ -208,7 +212,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 			}
 			else { //Fast without Remapping
 				for (int i = 0; i < TargetArray.Num(); i++) {
-					FHexPoint coords = IndexToCoord(i);
+					const FHexPoint coords = IndexToCoord(i);
 					TargetArray[i] = Noise->GetNoise2D(coords.X, coords.Y);
 					MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
 					MinMax.X = fminf(MinMax.X, TargetArray[i]);
@@ -218,7 +222,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 	else {
 		if (rangeCheck) { //Accurate with Remapping
 			for (int i = 0; i < TargetArray.Num(); i++) {
-				FHexPoint coords = IndexToCoord(i);
+				const FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = (Noise->GetNoise2D(pos.X, pos.Y) + 1) * newRangeMult - range.X;
 				MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
@@ -227,7 +231,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 		}
 		else { //Accurate with Remapping
 			for (int i = 0; i < TargetArray.Num(); i++) {
-				FHexPoint coords = IndexToCoord(i);
+				const FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = Noise->GetNoise2D(pos.X, pos.Y);
 				MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
@@ -287,25 +291,25 @@ FIntPoint AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArra
 #pragma endregion Noise2Array
 
 #pragma region tileDataStructs
-
-FTileRef AHexMap::MakeTileRef(FHexPoint Index) {
-	int i = HexToIndex(Index);
-	FTileRef tile;
-	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
-	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
-	tile.tile = ArTiles[i];
-	tile.tileCoords = Index;
-	return tile;
-}
-
-FTileRef AHexMap::MakeTileRef(int i) {
-	FTileRef tile;
-	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
-	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
-	tile.tile = ArTiles[i];
-	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
-	return tile;
-}
+//
+//FTileRef AHexMap::MakeTileRef(FHexPoint Index) {
+//	int i = HexToIndex(Index);
+//	FTileRef tile;
+//	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
+//	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
+//	tile.tile = ArTiles[i];
+//	tile.tileCoords = Index;
+//	return tile;
+//}
+//
+//FTileRef AHexMap::MakeTileRef(int i) {
+//	FTileRef tile;
+//	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
+//	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
+//	tile.tile = ArTiles[i];
+//	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
+//	return tile;
+//}
 
 #pragma endregion tileDataStructs
 

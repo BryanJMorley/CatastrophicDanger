@@ -35,8 +35,11 @@ public:
 	bool Active = false;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	bool QueueEmpty = true;
+	bool DivideHeatAcrossTiles = true;
 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float FireHeatScale = 1;
+	
 	UPROPERTY()
 	UWeatherController* WeatherSys = nullptr;
 
@@ -77,7 +80,7 @@ public:
 	void QueueTile(int Index);
 
 	//Calculate the change in heat for a single tile.
-	FORCEINLINE float CalculateFireDelta(const int& F, const int& H, const int& M) const;
+	FORCEINLINE float CalculateFireDelta(const float& F, const float& H, const float& M) const;
 
 
 	//store the fire delta into the buffer array to be reapplied at the end of turn.
@@ -87,7 +90,7 @@ public:
 	void ApplyFireDelta();
 
 	UFUNCTION(BlueprintCallable)
-	void FireSpreadFunction(int Index, int InFuel, int InHeat, int InMoisture);
+	void FireSpreadFunction(int Index, const float& F, const float& H, const float& M);
 
 	void IgnitionCheck(const int& Index);
 

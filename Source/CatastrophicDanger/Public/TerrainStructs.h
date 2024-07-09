@@ -61,13 +61,13 @@ struct FFireData {
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	int fuel;
+	float fuel;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	int heat;
+	float heat;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	int moisture;
+	float moisture;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	bool update;
@@ -190,11 +190,11 @@ struct FTileFhmStartValues : public FTableRowBase {
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int Moisture = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int FuelRange = 0;
+	FVector2D FuelRange = { 0,0 };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int HeatRange = 0;
+	FVector2D HeatRange = { 0,0 };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int MoistureRange = 0;
+	FVector2D MoistureRange = { 0,0 };
 };
 
 USTRUCT(BlueprintType)

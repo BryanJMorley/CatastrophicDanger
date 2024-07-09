@@ -18,7 +18,7 @@ FString UTileStructs::Conv_TerrainToString(FTerrainData TData)
 
 FString UTileStructs::Conv_FireToString(FFireData FData)
 {
-	return FString::Printf(TEXT("Fuel: %d Heat: %d Moisture: %d State: %f Update: %s"), FData.fuel, FData.heat, FData.moisture, *UEnum::GetValueAsName(FData.fireState).ToString(), FData.update ? "true" : "false");
+	return FString::Printf(TEXT("Fuel: %f Heat: %f Moisture: %f State: %s Update: %s"), FData.fuel, FData.heat, FData.moisture, *UEnum::GetValueAsName(FData.fireState).ToString(), FData.update ? "true" : "false");
 }
 
 FString UTileStructs::Conv_TileToString(FTileData HData)

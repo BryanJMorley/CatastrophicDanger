@@ -20,7 +20,7 @@ void AHexTile::Initialise(AHexMap* InMap, FHexPoint Index)
 	map = InMap;
 	tileCoords = Index;
 	tileIndex = InMap->HexToIndex(Index);
-	map->OnTerrainUpdateDelegate.AddUObject(this, &AHexTile::OnTerrainUpdate);
+	map->OnTerrainUpdateDelegate.AddDynamic(this, &AHexTile::OnTerrainUpdate);
 }
 
 #pragma region Updates

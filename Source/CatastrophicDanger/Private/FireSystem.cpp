@@ -30,9 +30,9 @@ void UFireSystem::QueueTile(int Index) {
 	TileUpdateQ.Push(Index);
 }
 
-float UFireSystem::CalculateFireDelta(const int& F, const int& H, const int& M) const
+float UFireSystem::CalculateFireDelta(const float& F, const float& H, const float& M) const
 {
-	return FMath::Min(FMath::Max(H - M, 1), F); //Delta Heat is how much heat exceeds moisture, capped by available fuel
+	return FMath::Min(FMath::Max(H - M, 0), F); //Delta Heat is how much heat exceeds moisture, capped by available fuel
 }
 
 //takes in a Fixed 7 Array of ints and an index for the centre tile, then Applies the calculated delta to the adjacent tiles if valid.
@@ -83,8 +83,8 @@ void UFireSystem::ApplyFireDelta()
 	for (int i = 0; i < MapSize * MapSize; i++) {
 		if (!ArFireBuffer[i].IsNearlyZero()) {
 			float& H = ArFireBuffer[i].Y;//setup some refs for readability and accessing
-			int& MapM = Map->ArMoisture[i];
-			int& MapH = Map->ArHeat[i];
+			float& MapM = Map->ArMoisture[i];
+			float& MapH = Map->ArHeat[i];
 			
 			Map->ArFuel[i] += ArFireBuffer[i].X; //Directly Affect The fuel
 
@@ -92,11 +92,11 @@ void UFireSystem::ApplyFireDelta()
 				if (H > MapM*2) {
 					H -= MapM; //if heat exceeds twice moisture, remove all moisture and apply the remaining heat.
 					MapM = 0;
-					MapH += ceil(H);
+					MapH += H;
 				}
 				else {
-					MapM -= floor(H / 2.0f); //if heat doesn't exceed moisture, split it between the two, favouring heat.
-					MapH += ceil(H / 2.0f);
+					MapM -= (H / 2.0f); //if heat doesn't exceed moisture, split it between the two.
+					MapH += (H / 2.0f);
 				}
 			}
 			else {
@@ -112,7 +112,7 @@ void UFireSystem::ApplyFireDelta()
 
 //calculate the fire spread for the given tile in the Queue, given its index and its Fhm values, 
 //then, save the Delta into the internal fire buffer.
-void UFireSystem::FireSpreadFunction(int Index, int F, int H, int M)
+void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, const float& M)
 {
 	if (F > 0) {
 		ETerrainType TerrainType = Map->ArTerrainType[Index];
@@ -131,6 +131,8 @@ void UFireSystem::FireSpreadFunction(int Index, int F, int H, int M)
 		for (int i = 0; i < 7; i++) {
 			dHAdj[i] *= (*WindEffectAdj)[i]; //scale the heat spread by the wind function
 			dHAdj[i] *= Gradient->Eval(Map->ArGradient[Index][i]); //same but the gradient
+			dHAdj[i] *= (DivideHeatAcrossTiles ? 1.0 / 7.0 : 1);
+			dHAdj[i] *= FireHeatScale;
 		}
 
 		CacheTileDelta(dHAdj, Index); //store the spread heat
@@ -143,8 +145,9 @@ void UFireSystem::IgnitionCheck(const int& Index)
 	if (Map->ArHeat[Index] > (Map->ArMoisture[Index] * 2)) {
 		Map->ArFireState[Index] = EFireState::BURNING;
 	}
-	if (Map->ArFuel[Index] < 1) {
+	if (Map->ArFuel[Index] <= 0 ) {
 		Map->ArFireState[Index] = EFireState::BURNT;
+		Map->ArFuel[Index] = 0;
 	}
 
 }

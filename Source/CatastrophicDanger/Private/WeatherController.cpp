@@ -7,15 +7,15 @@
 
 void UWeatherController::WeatherUpdate()
 {
-	WindStrength = FMath::Clamp(WindStrength+FMath::RandRange(-1, 1), 0, 3);
-	WindDir = FMath::Abs(FMath::Modulo(WindDir + FMath::RandRange(-1, 1), 6));
-	WindDir = 1;
+	WindStrength = FMath::Clamp(WindStrength+round(FMath::FRandRange(-1.0f, 1.0f)), 0, 3);
+	WindDir = FMath::Abs(FMath::Modulo(int(WindDir + round(FMath::FRandRange(-1.0f, 1.0f))), 6));
+	UpdateWindEffectMaps();
 	OnWeatherUpdateDelegate.Broadcast();
 }
 
 UWeatherController::UWeatherController()
 {
-	WindStrength = 0;
+	WindStrength = 1;
 	WindDir = 1;
 	WindEffect.Init(1, 7);
 }
@@ -47,9 +47,7 @@ void UWeatherController::UpdateWindEffectMaps()
 
 }
 
-
 const TArray<float, TFixedAllocator<7>>* UWeatherController::GetWindEffect(ETerrainType InTerrain)
 {
-	UE_LOG(LogTemp, Warning, TEXT("GET WIND EFFECT"));
 	return &WindEffectMaps[InTerrain];
 }
