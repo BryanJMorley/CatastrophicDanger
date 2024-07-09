@@ -3,8 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Array2D.h"
-#include "HexPoint.h"
 #include "TerrainStructs.h"
 #include "WeatherController.h"
 #include "FireSystem.generated.h"
@@ -12,6 +10,9 @@
 /**
  * 
  */
+
+class AHexPoint;
+class ACDGameState;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogFire, Log, All);
 
@@ -43,9 +44,12 @@ public:
 	UCurveTable* FireGradientMaps = nullptr;
 
 	UPROPERTY()
-	TArray<FIntVector> ArFireBuffer;
+	TArray<FVector3f> ArFireBuffer;
 
-	TQueue<int> TileUpdateQ;
+	//TQueue<int> TileUpdateQ;
+	TArray<int> TileUpdateQ;
+
+	ACDGameState* GameState = nullptr;
 
 	//TArray<FRealCurve> CurveRows;
 
@@ -73,16 +77,21 @@ public:
 	void QueueTile(int Index);
 
 	//Calculate the change in heat for a single tile.
-	void CalculateFireDelta(int Index);
+	FORCEINLINE float CalculateFireDelta(const int& F, const int& H, const int& M) const;
+
 
 	//store the fire delta into the buffer array to be reapplied at the end of turn.
-	void CacheTileDelta(const TArray<int, TFixedAllocator<7>>& InDelta, int Index);
+	void CacheTileDelta(const TArray<float, TFixedAllocator<7>>& InDelta, int Index);
 
 	UFUNCTION(BlueprintCallable)
 	void ApplyFireDelta();
 
 	UFUNCTION(BlueprintCallable)
 	void FireSpreadFunction(int Index, int InFuel, int InHeat, int InMoisture);
+
+	void IgnitionCheck(const int& Index);
+
+
 
 	//UFUNCTION()
 	//void MakeCurvesFromTable(UCurveTable* InTable);

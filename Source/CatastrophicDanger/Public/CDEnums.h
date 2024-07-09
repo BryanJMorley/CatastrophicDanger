@@ -38,6 +38,8 @@ enum class ETerrainType : uint8
 	TOWN		UMETA(DisplayName = "Suburbs"),
 	RIVER		UMETA(DisplayName = "River"),
 };
+ENUM_RANGE_BY_COUNT(ETerrainType, ETerrainType::RIVER)
+
 
 UENUM(BlueprintType)
 enum class EFireState : uint8

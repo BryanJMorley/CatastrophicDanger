@@ -62,9 +62,8 @@ void AHexMap::SetupFireSystem(UFireSystem* FireSys)
 	FireSys->Map = this;
 	FireSys->ArFireBuffer.Init({ 0,0,0 }, MapSize*MapSize);
 	UE_LOG(LogFire, Display, TEXT("Fire Map Linked to: %s Object"), *(this->GetName()));
-	FireSys->FireGradientMaps = FireGradientMaps;
-	UE_LOG(LogFire, Display, TEXT("Gradient Maps: %s"), *(FireGradientMaps->GetName()));
 	FireSys->Active = true;
+	FireSys->GameState = (ACDGameState*)GetWorld()->GetGameState();
 }
 
 void AHexMap::FillFhmFromTerrainTable(UDataTable* InTable)
@@ -106,7 +105,7 @@ void AHexMap::CalculateGradient()
 					ArGradient[i][ii] = INT8_MIN; //if its out of bounds, set it to int8 min
 				}
 			}
-			ArGradient[i][0] = 1; //set the 'self' gradient to one, which keeps things neat.
+			ArGradient[i][0] = 0; //set the 'self' gradient to zero, just in case.
 		}
 	}
 }
@@ -121,7 +120,6 @@ void AHexMap::QueueBurningTiles()
 		}
 	}
 }
-
 
 ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const
 {
@@ -166,7 +164,7 @@ ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Te
 
 #pragma region MapSpawning
 
-void AHexMap::SpawnGrid() {
+void AHexMap::SpawnGrid(bool TriggerUpdate) {
 	if (MapSetupState & int(EMapProgress::INITARRAYS)) { //bitmask check we've setup the arrays
 		for (int i = 0; i < MapSize*MapSize; i++)
 		{
@@ -174,7 +172,7 @@ void AHexMap::SpawnGrid() {
 			ArTiles[i] = SpawnTile(pos, IndexToHex(i));
 		}
 		MapSetupState = MapSetupState|int(EMapProgress::SPAWNTILES);
-		TriggerTerrainUpdate(false);
+		if(TriggerUpdate) TriggerTerrainUpdate(false, true);
 
 	}
 	else {
@@ -349,8 +347,8 @@ FTerrainData AHexMap::GetTerrainData(const FHexPoint& Index) {
 
 #pragma region DelegateTriggers
 
-void AHexMap::TriggerTerrainUpdate(bool DoMovement) {
-	OnTerrainUpdateDelegate.Broadcast(DoMovement);
+void AHexMap::TriggerTerrainUpdate(bool DoMovement, bool MapSetupTrigger) {
+	OnTerrainUpdateDelegate.Broadcast(DoMovement, MapSetupTrigger);
 }
 
 void AHexMap::TriggerMapSetupComplete(EMapProgress Progress)

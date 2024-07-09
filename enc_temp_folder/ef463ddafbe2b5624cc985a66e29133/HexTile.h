@@ -46,7 +46,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Tile Update")
 	FFireData GetFire() const;
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Update")
+	UFUNCTION()
 	void OnTerrainUpdate(bool Transform = false, bool MapSetupTrigger = false);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tile Update", meta = (DisplayName = "OnTerrainUpdate"))

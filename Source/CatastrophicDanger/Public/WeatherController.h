@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CDEnums.h"
 #include "WeatherController.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FWeatherUpdateSignature);
@@ -14,15 +15,27 @@ class CATASTROPHICDANGER_API UWeatherController : public UWorldSubsystem
 
 public:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-	int WindStrength = 1;
+	int WindStrength = 2;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	int WindDir = 1;
 
-	TArray<float, TFixedAllocator<7>> WindEffect;
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	UDataTable* WindEffectTable = nullptr;
 
-	TArray<float, TFixedAllocator<7>>* GetWindEffect();
+	TMap<ETerrainType, TArray<float, TFixedAllocator<7>>> WindEffectMapsBase;
 
+	TMap<ETerrainType, TArray<float, TFixedAllocator<7>>> WindEffectMaps;
+
+	UFUNCTION(BlueprintCallable)
+	void BuildWindEffectMaps();
+	UFUNCTION(BlueprintCallable)
+	void UpdateWindEffectMaps();
+
+
+	TArray <float, TFixedAllocator<7>> WindEffect;
+
+	const TArray<float, TFixedAllocator<7>>* GetWindEffect(ETerrainType InTerrain);
 	UPROPERTY(BlueprintAssignable)
 	FWeatherUpdateSignature OnWeatherUpdateDelegate;
 

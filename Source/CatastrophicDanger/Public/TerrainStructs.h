@@ -197,6 +197,36 @@ struct FTileFhmStartValues : public FTableRowBase {
 	int MoistureRange = 0;
 };
 
+USTRUCT(BlueprintType)
+struct FWindEffectMap : public FTableRowBase {
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Centre = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "ForwardRight / NE"))
+	float ForwardRight = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Forward / N"))
+	float Forward = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "ForwardLeft / NW"))
+	float ForwardLeft = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "BackLeft / SW"))
+	float BackLeft = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Back / S"))
+	float Back = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "BackRight / SE"))
+	float BackRight = 0;
+
+	void AsArray(TArray<float, TFixedAllocator<7>>& TargetArray) {
+		TargetArray[0] = Centre;
+		TargetArray[1] = ForwardRight;
+		TargetArray[2] = Forward;
+		TargetArray[3] = ForwardLeft;
+		TargetArray[4] = BackLeft;
+		TargetArray[5] = Back;
+		TargetArray[6] = BackRight;
+	}
+};
+
 UCLASS()
 class CATASTROPHICDANGER_API UTileStructs : public UBlueprintFunctionLibrary
 {

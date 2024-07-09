@@ -14,7 +14,7 @@
 
 class AHexTile;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FTerrainUpdateSignature, bool);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FTerrainUpdateSignature, bool, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FMapSetupCompleteSignature, EMapProgress);
 
 #pragma region ClassBody
@@ -77,7 +77,7 @@ public:
 	FTerrainUpdateSignature OnTerrainUpdateDelegate;
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
-	void TriggerTerrainUpdate(bool DoMovement = false);
+	void TriggerTerrainUpdate(bool DoMovement = false, bool MapSetupTrigger = false);
 
 	FMapSetupCompleteSignature OnMapSetupCompleteDelegate;
 
@@ -105,7 +105,7 @@ public:
 	void FillFhmFromTerrainTable(UDataTable* InTable);
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
-	void SpawnGrid();
+	void SpawnGrid(bool TriggerUpdate = true);
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	void DestroyGrid();

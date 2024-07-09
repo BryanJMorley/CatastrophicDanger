@@ -18,4 +18,14 @@ class CATASTROPHICDANGER_API ACAGameMode : public AGameModeBase
 
 public:
 	
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Map Properties|Fire Settings")
+	UCurveTable* FireGradientMaps = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Map Properties|Fire Settings")
+	UDataTable* WindEffectTable = nullptr;
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 };

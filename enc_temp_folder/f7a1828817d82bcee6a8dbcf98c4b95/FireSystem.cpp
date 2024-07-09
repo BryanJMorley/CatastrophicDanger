@@ -89,7 +89,7 @@ void UFireSystem::ApplyFireDelta()
 			Map->ArFuel[i] += ArFireBuffer[i].X; //Directly Affect The fuel
 
 			if (MapM>0) {
-				if (H > MapM*2) {
+				if ((H*2.0f) > MapM) {
 					H -= MapM; //if heat exceeds twice moisture, remove all moisture and apply the remaining heat.
 					MapM = 0;
 					MapH += ceil(H);
@@ -106,7 +106,6 @@ void UFireSystem::ApplyFireDelta()
 		}
 	}
 	Map->TriggerTerrainUpdate();
-	ArFireBuffer.Empty();
 	ArFireBuffer.SetNumZeroed(MapSize * MapSize);
 }
 
@@ -143,7 +142,7 @@ void UFireSystem::IgnitionCheck(const int& Index)
 	if (Map->ArHeat[Index] > (Map->ArMoisture[Index] * 2)) {
 		Map->ArFireState[Index] = EFireState::BURNING;
 	}
-	if (Map->ArFuel[Index] < 1) {
+	if (Map->ArFuel[Index] <= 1) {
 		Map->ArFireState[Index] = EFireState::BURNT;
 	}
 
