@@ -3,6 +3,7 @@
 
 #include "FireSystem.h"
 #include "HexMap.h"
+#include "HexTile.h"
 #include "Logging/StructuredLog.h"
 #include <HexTool.h>
 
@@ -26,40 +27,52 @@ void UFireSystem::Deinitialize()
 }
 
 void UFireSystem::QueueTile(int Index) {
-	TileUpdateQ.Enqueue(Index);
-	UE_LOGFMT(LogFire, Display, "Added Tile {0}", Index);
+	TileUpdateQ.Push(Index);
 }
 
-void UFireSystem::CalculateFireDelta(int Index)
+float UFireSystem::CalculateFireDelta(const float& F, const float& H, const float& M) const
 {
+	return FMath::Min(FMath::Max(H - M, 0), F); //Delta Heat is how much heat exceeds moisture, capped by available fuel
 }
 
 //takes in a Fixed 7 Array of ints and an index for the centre tile, then Applies the calculated delta to the adjacent tiles if valid.
-void UFireSystem::CacheTileDelta(const TArray<int, TFixedAllocator<7>>& InDelta, int Index)
+void UFireSystem::CacheTileDelta(const TArray<float, TFixedAllocator<7>>& InDelta, int Index)
 {
 	FHexPoint HexIndex = UHexTool::IndexToHex(Index, MapSize); //get the index as a hex so we can get the adjacent list
 	const TArray<FHexPoint, TFixedAllocator<7>> Adj = { HexIndex.HexRadius1() }; //Get the hex Radius index list
 	
 	for (int i = 0; i < 7; i++) { //for each element in the adj list, check the cell is valid, then apply the heat delta
 		if(Adj[i].InBounds(MapSize)) {
-			//ArFireBuffer[Adj[i].Flatten(MapSize)].Y += InDelta[i];
+			int flat = Adj[i].Flatten(MapSize);
+			if (ArFireBuffer.IsValidIndex(flat)) {
+				ArFireBuffer[flat].Y += InDelta[i];
+				//UE_LOGFMT(LogFire, Display, "Cached Tile: {0} Delta {1}", flat, InDelta[i]);
+			}
+			else {
+				UE_LOGFMT(LogFire, Error, "ARRAY INDEX OUT OF BOUNDS\nFireBuffer is Size {0}, trying to add tile: {1} | {2}!", ArFireBuffer.Num(), flat, Adj[i].ToString());
+			}
 		}
 	}
 }
 
 void UFireSystem::Tick(float DeltaTime)
 {
-	if (GEngine) {
-		if(Active) GEngine->AddOnScreenDebugMessage(1, 1, FColor::Yellow, TEXT("Fire System Active"));
-		if (!TileUpdateQ.IsEmpty()) GEngine->AddOnScreenDebugMessage(1, 1, FColor::Yellow, FString::Printf(TEXT("Top Element: %d"), TileUpdateQ.Peek()) );
-	}
 	if (Active) {
-
-		if (!TileUpdateQ.IsEmpty()) {
-			int Tile;
-			TileUpdateQ.Dequeue(Tile);
-			UE_LOGFMT(LogFire, Display, "Processing Tile: {0}", Tile);
-			FireSpreadFunction(Tile, Map->ArFuel[Tile], Map->ArHeat[Tile], Map->ArMoisture[Tile]);
+		if (GEngine) {
+			GEngine->AddOnScreenDebugMessage(1, 1, FColor::Red, FString::Printf(TEXT("Fire Queue Size: %d tiles"), TileUpdateQ.Num()));
+		}
+		for (int i = 0; i < 3; i++) { //change this to make it process more tiles per tick. TODO: Come up with a more elegant soloution than this.
+			if (!TileUpdateQ.IsEmpty()) {
+				int Tile = TileUpdateQ.Pop();
+				UE_LOGFMT(LogFire, Display, "Processing Tile: {0}", Tile);
+				FireSpreadFunction(Tile, Map->ArFuel[Tile], Map->ArHeat[Tile], Map->ArMoisture[Tile]);
+			}
+			else {
+				if (GameState->TurnState == ETurnState::FIRE_THINKING) {
+					ApplyFireDelta();
+					FireUpdateComplete();
+				}
+			}
 		}
 	}
 }
@@ -68,53 +81,76 @@ void UFireSystem::Tick(float DeltaTime)
 void UFireSystem::ApplyFireDelta()
 {
 	for (int i = 0; i < MapSize * MapSize; i++) {
-		if (ArFireBuffer[i] == FIntVector()) {
-			UE_LOG(LogFire, Display, TEXT("Tile Empty, Skipped"));
-		} 
-		else {
-			UE_LOG(LogFire, Display, TEXT("Tile Contains: F %d"), ArFireBuffer[i].X);
+		if (!ArFireBuffer[i].IsNearlyZero()) {
+			float& H = ArFireBuffer[i].Y;//setup some refs for readability and accessing
+			float& MapM = Map->ArMoisture[i];
+			float& MapH = Map->ArHeat[i];
+			
+			Map->ArFuel[i] += ArFireBuffer[i].X; //Directly Affect The fuel
+
+			if (MapM>0) {
+				if (H > MapM*2) {
+					H -= MapM; //if heat exceeds twice moisture, remove all moisture and apply the remaining heat.
+					MapM = 0;
+					MapH += H;
+				}
+				else {
+					MapM -= (H / 2.0f); //if heat doesn't exceed moisture, split it between the two.
+					MapH += (H / 2.0f);
+				}
+			}
+			else {
+				MapH += H;
+			}
+			IgnitionCheck(i);
 		}
 	}
+	Map->TriggerTerrainUpdate();
+	ArFireBuffer.Empty();
+	ArFireBuffer.SetNumZeroed(MapSize * MapSize);
 }
 
 //calculate the fire spread for the given tile in the Queue, given its index and its Fhm values, 
 //then, save the Delta into the internal fire buffer.
-void UFireSystem::FireSpreadFunction(int Index, int F, int H, int M)
+void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, const float& M)
 {
 	if (F > 0) {
-		const TArray<float, TFixedAllocator<7>>* WindEffectAdj = WeatherSys->GetWindEffect(); //Get the current Wind Effect
-		TArray<int, TFixedAllocator<7>> dHAdj; //Empty array to hold the heat delta
-
-		//int dH = FMath::Max(FMath::Max(H - M, 0), F); //Delta Heat is how much heat exceeds moisture, capped by available fuel
-		
-		int dH = 5; //TODO: CHANGE THIS BACK TO THE ACTUAL CALCULATION
-		int dF = dH; //store the initial dH to reduce consumed fuel.
-
-		dHAdj.Init(dH, 7);//fill Delta Adj with DH to start.
-
 		ETerrainType TerrainType = Map->ArTerrainType[Index];
 		FRealCurve* Gradient = FireGradientMaps->FindCurve(UEnum::GetValueAsName(TerrainType), "FireSystem::FireSpreadFunction", true);
 		UE_LOG(LogFire, Display, TEXT("%s Gradient Function: 0 %f, 1 %f, 2 %f"), *UEnum::GetValueAsString(TerrainType), Gradient->Eval(0), Gradient->Eval(1), Gradient->Eval(2));
 
+		const TArray<float, TFixedAllocator<7>>* WindEffectAdj = WeatherSys->GetWindEffect(TerrainType); //Get the current Wind Effect
+		TArray<float, TFixedAllocator<7>> dHAdj; //Empty array to hold the heat delta
+		
+		float dH = CalculateFireDelta(F, H, M);
+		UE_LOGFMT(LogFire, Display, "Calculated heat delta of: {0}", dH);
+		float dF = dH; //store the initial dH to reduce consumed fuel by.
+
+		dHAdj.Init(dH, 7);//fill Delta Adj with DH to start.
+
 		for (int i = 0; i < 7; i++) {
 			dHAdj[i] *= (*WindEffectAdj)[i]; //scale the heat spread by the wind function
-			dHAdj[i] *= Map->ArGradient[Index][i]; //same but the gradient
+			dHAdj[i] *= Gradient->Eval(Map->ArGradient[Index][i]); //same but the gradient
+			dHAdj[i] *= (DivideHeatAcrossTiles ? 1.0 / 7.0 : 1);
+			dHAdj[i] *= FireHeatScale;
 		}
 
-		CacheTileDelta(dHAdj, Index);
-		ArFireBuffer[Index].X -= dF;
+		CacheTileDelta(dHAdj, Index); //store the spread heat
+		ArFireBuffer[Index].X -= dF; //same for fuel
 	}
 }
 
-//void UFireSystem::MakeCurvesFromTable(UCurveTable* InTable)
-//{
-//	auto CurveTable = FireGradientMaps->GetRowMap();
-//	for (const auto C : CurveTable) {
-//		CurveRows.Add(C.Value);
-//		UE_LOG(LogFire, Display, TEXT("Add T.Type from Table: %s"), *C.Key.ToString());
-//	}
-//}
+void UFireSystem::IgnitionCheck(const int& Index)
+{
+	if (Map->ArHeat[Index] > (Map->ArMoisture[Index] * 2)) {
+		Map->ArFireState[Index] = EFireState::BURNING;
+	}
+	if (Map->ArFuel[Index] <= 0 ) {
+		Map->ArFireState[Index] = EFireState::BURNT;
+		Map->ArFuel[Index] = 0;
+	}
 
+}
 
 void UFireSystem::FireUpdateComplete()
 {

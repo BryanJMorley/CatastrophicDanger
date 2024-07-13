@@ -14,7 +14,9 @@
 
 class AHexTile;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FTerrainUpdateSignature, bool);
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FTerrainUpdateSignature, bool, DoTransform, bool, MatSetupUpdate);
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FMapSetupCompleteSignature, EMapProgress);
 
 #pragma region ClassBody
@@ -52,11 +54,11 @@ public:
 #pragma region DataArrays
 	//Arrays to hold all the data. Structs are made to reference to it weakly, but it all stays here, which makes certain 
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fuel"))
-	TArray<int> ArFuel;
+	TArray<float> ArFuel;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Heat"))
-	TArray<int> ArHeat;
+	TArray<float> ArHeat;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
-	TArray<int> ArMoisture;
+	TArray<float> ArMoisture;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tile Update"))
 	TArray<bool> ArUpdate;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Elevation"))
@@ -74,10 +76,11 @@ public:
 
 #pragma region Delegates
 
+	UPROPERTY(BlueprintAssignable)
 	FTerrainUpdateSignature OnTerrainUpdateDelegate;
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
-	void TriggerTerrainUpdate(bool DoMovement = false);
+	void TriggerTerrainUpdate(bool DoMovement = false, bool MapSetupTrigger = false);
 
 	FMapSetupCompleteSignature OnMapSetupCompleteDelegate;
 
@@ -105,7 +108,7 @@ public:
 	void FillFhmFromTerrainTable(UDataTable* InTable);
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
-	void SpawnGrid();
+	void SpawnGrid(bool TriggerUpdate = true);
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	void DestroyGrid();
@@ -148,10 +151,10 @@ public:
 	//UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
 	//bool SetTileData(const FHexPoint& Index, const FTileData& data);
 
-	UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
-	FTileRef MakeTileRef(FHexPoint Index);
+	//UFUNCTION(BlueprintCallable, Category = "Tile Data", meta = (AutoCreateRefTerm = "Index"))
+	//FTileRef MakeTileRef(FHexPoint Index);
 
-	FTileRef MakeTileRef(int Index);
+	//FTileRef MakeTileRef(int Index);
 #pragma endregion GetData
 
 
@@ -175,8 +178,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	FORCEINLINE FIntPoint IndexToCoord(const int& Index) const {
-		FIntPoint coord = { (Index % MapSize), (Index / MapSize) };
-		return coord;
+		return { (Index % MapSize), (Index / MapSize) };
+	}
+
+	FORCEINLINE FVector IndexToCoord3(const int& Index) const {
+		return { double(Index % MapSize), double(Index / MapSize), 0.0 };
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")

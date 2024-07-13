@@ -62,9 +62,8 @@ void AHexMap::SetupFireSystem(UFireSystem* FireSys)
 	FireSys->Map = this;
 	FireSys->ArFireBuffer.Init({ 0,0,0 }, MapSize*MapSize);
 	UE_LOG(LogFire, Display, TEXT("Fire Map Linked to: %s Object"), *(this->GetName()));
-	FireSys->FireGradientMaps = FireGradientMaps;
-	UE_LOG(LogFire, Display, TEXT("Gradient Maps: %s"), *(FireGradientMaps->GetName()));
 	FireSys->Active = true;
+	FireSys->GameState = (ACDGameState*)GetWorld()->GetGameState();
 }
 
 void AHexMap::FillFhmFromTerrainTable(UDataTable* InTable)
@@ -73,9 +72,13 @@ void AHexMap::FillFhmFromTerrainTable(UDataTable* InTable)
 		for (int i = 0; i < MapSize * MapSize; i++) {
 			FTileFhmStartValues* FHM = InTable->FindRow<FTileFhmStartValues>(UEnum::GetValueAsName(ArTerrainType[i]), "HexMap::FillFhmFromTerrainTable", true);
 			if (FHM) {
-				ArFuel[i] = FHM->Fuel;
-				ArHeat[i] = FHM->Heat;
-				ArMoisture[i] = FHM->Moisture;
+				/*const FVector coords = IndexToCoord3(i);
+				ArFuel[i] = FHM->Fuel + FMath::Lerp(-FHM->FuelRange.X, FHM->FuelRange.Y, (1+FMath::PerlinNoise3D(coords))/2.0f);
+				ArHeat[i] = FHM->Heat + FMath::Lerp(-FHM->HeatRange.X, FHM->HeatRange.Y, (1+FMath::PerlinNoise3D(coords + 1))/2.0f);
+				ArMoisture[i] = FHM->Moisture + FMath::Lerp(-FHM->MoistureRange.X, FHM->MoistureRange.Y, (1+FMath::PerlinNoise3D(coords + 2))/2.0f);*/
+				ArFuel[i] = FHM->Fuel + FMath::FRandRange(-FHM->FuelRange.X, FHM->FuelRange.Y);
+				ArHeat[i] = FHM->Heat + FMath::FRandRange(-FHM->HeatRange.X, FHM->HeatRange.Y);
+				ArMoisture[i] = FHM->Moisture + FMath::FRandRange(-FHM->MoistureRange.X, FHM->MoistureRange.Y);
 			}
 			else
 			{
@@ -106,7 +109,7 @@ void AHexMap::CalculateGradient()
 					ArGradient[i][ii] = INT8_MIN; //if its out of bounds, set it to int8 min
 				}
 			}
-			ArGradient[i][0] = 1; //set the 'self' gradient to one, which keeps things neat.
+			ArGradient[i][0] = 0; //set the 'self' gradient to zero, just in case.
 		}
 	}
 }
@@ -121,7 +124,6 @@ void AHexMap::QueueBurningTiles()
 		}
 	}
 }
-
 
 ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const
 {
@@ -166,7 +168,7 @@ ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Te
 
 #pragma region MapSpawning
 
-void AHexMap::SpawnGrid() {
+void AHexMap::SpawnGrid(bool TriggerUpdate) {
 	if (MapSetupState & int(EMapProgress::INITARRAYS)) { //bitmask check we've setup the arrays
 		for (int i = 0; i < MapSize*MapSize; i++)
 		{
@@ -174,7 +176,7 @@ void AHexMap::SpawnGrid() {
 			ArTiles[i] = SpawnTile(pos, IndexToHex(i));
 		}
 		MapSetupState = MapSetupState|int(EMapProgress::SPAWNTILES);
-		TriggerTerrainUpdate(false);
+		if(TriggerUpdate) TriggerTerrainUpdate(false, true);
 
 	}
 	else {
@@ -202,7 +204,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 	if (!accuratePos) {
 			if (rangeCheck) { //Fast with Remapping
 				for (int i = 0; i < TargetArray.Num(); i++) {
-					FHexPoint coords = IndexToCoord(i);
+					const FHexPoint coords = IndexToCoord(i);
 					TargetArray[i] = (Noise->GetNoise2D(coords.X, coords.Y)+1)*newRangeMult-range.X;
 					MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
 					MinMax.X = fminf(MinMax.X, TargetArray[i]);
@@ -210,7 +212,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 			}
 			else { //Fast without Remapping
 				for (int i = 0; i < TargetArray.Num(); i++) {
-					FHexPoint coords = IndexToCoord(i);
+					const FHexPoint coords = IndexToCoord(i);
 					TargetArray[i] = Noise->GetNoise2D(coords.X, coords.Y);
 					MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
 					MinMax.X = fminf(MinMax.X, TargetArray[i]);
@@ -220,7 +222,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 	else {
 		if (rangeCheck) { //Accurate with Remapping
 			for (int i = 0; i < TargetArray.Num(); i++) {
-				FHexPoint coords = IndexToCoord(i);
+				const FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = (Noise->GetNoise2D(pos.X, pos.Y) + 1) * newRangeMult - range.X;
 				MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
@@ -229,7 +231,7 @@ FVector2f AHexMap::Noise2DToFloatArray(UFastNoiseWrapper* Noise, UPARAM(ref) TAr
 		}
 		else { //Accurate with Remapping
 			for (int i = 0; i < TargetArray.Num(); i++) {
-				FHexPoint coords = IndexToCoord(i);
+				const FHexPoint coords = IndexToCoord(i);
 				FVector pos = UHexTool::HexToPos(coords, TileSize);
 				TargetArray[i] = Noise->GetNoise2D(pos.X, pos.Y);
 				MinMax.Y = fmaxf(MinMax.Y, TargetArray[i]);
@@ -289,25 +291,25 @@ FIntPoint AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArra
 #pragma endregion Noise2Array
 
 #pragma region tileDataStructs
-
-FTileRef AHexMap::MakeTileRef(FHexPoint Index) {
-	int i = HexToIndex(Index);
-	FTileRef tile;
-	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
-	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
-	tile.tile = ArTiles[i];
-	tile.tileCoords = Index;
-	return tile;
-}
-
-FTileRef AHexMap::MakeTileRef(int i) {
-	FTileRef tile;
-	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
-	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
-	tile.tile = ArTiles[i];
-	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
-	return tile;
-}
+//
+//FTileRef AHexMap::MakeTileRef(FHexPoint Index) {
+//	int i = HexToIndex(Index);
+//	FTileRef tile;
+//	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
+//	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
+//	tile.tile = ArTiles[i];
+//	tile.tileCoords = Index;
+//	return tile;
+//}
+//
+//FTileRef AHexMap::MakeTileRef(int i) {
+//	FTileRef tile;
+//	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
+//	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
+//	tile.tile = ArTiles[i];
+//	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
+//	return tile;
+//}
 
 #pragma endregion tileDataStructs
 
@@ -349,8 +351,8 @@ FTerrainData AHexMap::GetTerrainData(const FHexPoint& Index) {
 
 #pragma region DelegateTriggers
 
-void AHexMap::TriggerTerrainUpdate(bool DoMovement) {
-	OnTerrainUpdateDelegate.Broadcast(DoMovement);
+void AHexMap::TriggerTerrainUpdate(bool DoMovement, bool MapSetupTrigger) {
+	OnTerrainUpdateDelegate.Broadcast(DoMovement, MapSetupTrigger);
 }
 
 void AHexMap::TriggerMapSetupComplete(EMapProgress Progress)
