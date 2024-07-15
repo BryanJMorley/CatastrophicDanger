@@ -188,7 +188,7 @@ AHexTile* AHexMap::SpawnTile(FVector pos, FHexPoint Index) {
 	if (TileClass == nullptr) return nullptr;
 	AHexTile* newTile = GetWorld()->SpawnActor<AHexTile>(TileClass, pos, { 0,0,0 });
 	newTile->Initialise(this, Index);
-	newTile->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	//newTile->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	return newTile;
 }
 
