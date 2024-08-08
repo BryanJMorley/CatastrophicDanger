@@ -45,7 +45,25 @@ public:
         FHexPoint coord = { (Index % Size), (Index / Size) };
         return coord;
     }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static TArray<int> TileNeighbors(const int& Index, int Size, bool IncludeSelf);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static bool HexInBounds(const FHexPoint& Index, int Size) {
+        FIntPoint coord = Index.ToOffset();
+        return (coord.X >= 0 && coord.X < Size && coord.Y >= 0 && coord.Y < Size);
+    }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint HexSubtract(const FHexPoint& A, const FHexPoint& B) {
+        return FHexPoint(A.X - B.X, A.Y - B.Y, A.Z - B.Z);
+    }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static int HexDistance(const FHexPoint& A, const FHexPoint& B) {
+        FHexPoint vec = HexSubtract(A, B);
+        return (abs(vec.X) + abs(vec.Y) + abs(vec.Z)) / 2;
+    }
+
 };
-
-
-

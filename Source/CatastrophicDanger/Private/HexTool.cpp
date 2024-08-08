@@ -51,6 +51,25 @@ FIntPoint UHexTool::IndexToCoord(int I, int Size)
     return { (I % Size), (I / Size) };
 }
 
+TArray<int> UHexTool::TileNeighbors(const int& Index, int Size, bool IncludeSelf)
+{
+    TArray<FHexPoint> Adj; 
+    if (IncludeSelf) {
+        Adj = IndexToHex(Index, Size).HexRadius1();
+    }
+    else {
+        Adj = IndexToHex(Index, Size).HexAdjacent();
+    }
+
+    TArray<int> intAdj;
+    for (FHexPoint H : Adj) {
+        if (HexInBounds(H, Size)) {
+            intAdj.Add(H.Flatten(Size));
+        }
+    }
+    return intAdj;
+}
+
 FHexPoint UHexTool::makeHexPoint(FVector Pos) {
     return FIntVector(Pos);
 }
@@ -66,20 +85,3 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
      h.Z = -h.X - h.Y;
      return h;
  }
-
-
-
-//
-//FHexPoint UHexTool::AxialToOffset(FHexPoint Coords) {
-//    FHexPoint offset = { 0, 0 };
-//    offset.X = Coords.X;
-//    offset.Y = Coords.Y + (Coords.X - (Coords.X & 1)) / 2;
-//    return offset;
-//}
-//
-//FHexPoint UHexTool::OffsetToAxial(FHexPoint Coords) {
-//    FHexPoint offset = { 0,0 };
-//    offset.X = Coords.X;
-//    offset.Y = Coords.Y - (Coords.X - (Coords.X & 1)) / 2; //Use &1 (bitwise &) instead of modulo to handle negatives
-//    return offset;
-//}
