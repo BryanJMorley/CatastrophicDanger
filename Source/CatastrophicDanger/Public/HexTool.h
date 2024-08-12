@@ -66,4 +66,7 @@ public:
         return (abs(vec.X) + abs(vec.Y) + abs(vec.Z)) / 2;
     }
 
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint HexLerp(const FHexPoint& A, const FHexPoint& B, float alpha);
+
 };

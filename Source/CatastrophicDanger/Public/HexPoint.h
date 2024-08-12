@@ -9,17 +9,19 @@
 
 USTRUCT(BlueprintType)
 struct FHexPoint : public FIntVector {
-	
+
 	GENERATED_BODY()
 
-public: 
+public:
 	using FIntVector::FIntVector;
 
 	FHexPoint(FIntVector Point) {
-			X = Point.X;
-			Y = Point.Y;
-			Z = Point.Z;
+		X = Point.X;
+		Y = Point.Y;
+		Z = Point.Z;
 	}
+
+	FHexPoint(FHexFrac Point);
 
 	FHexPoint(int Q, int R, int S) {
 		X = Q;
@@ -31,7 +33,7 @@ public:
 	FHexPoint(FIntPoint Point) {
 		X = Point.X;
 		Y = Point.Y - (X - (X & 1)) / 2;
-		Z = -X-Y;
+		Z = -X - Y;
 	}
 
 	//constructs cubic coords from 2 ints
@@ -46,7 +48,7 @@ public:
 		Y = Point.Y;
 		Z = Point.Z;
 	}
-	
+
 	void operator = (FVector V) {
 		X = V.X;
 		Y = V.Y;
@@ -60,14 +62,18 @@ public:
 	}
 
 	FORCEINLINE FIntPoint ToOffset() const {
-		return { X, Y + (X - (X&1)) / 2};
+		return { X, Y + (X - (X & 1)) / 2 };
 	}
 
 	//returns an array of all the adjacent hex tiles, starting from NorthEast going CounterClockwise
 	//where north is asummed to be -Y
-	FORCEINLINE TArray <FHexPoint,TFixedAllocator<6>> HexAdjacent() const {
-		return { {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1}, {X - 1, Y, Z + 1}, 
+	FORCEINLINE TArray <FHexPoint, TFixedAllocator<6>> HexAdjacent() const {
+		return { {X + 1, Y - 1, Z}, {X, Y - 1, Z + 1}, {X - 1, Y, Z + 1},
 				 {X - 1, Y + 1, Z}, {X, Y + 1, Z - 1}, {X + 1, Y, Z - 1} };
+	}
+
+	FORCEINLINE FHexPoint HexDirection(int InDir) {
+		return HexAdjacent()[FMath::Modulo(InDir, 6)];
 	}
 	
 	//returns an array of all the adjacent hex tiles, starting from the current hex, then NorthEast going CounterClockwise
@@ -161,7 +167,18 @@ class CATASTROPHICDANGER_API UHexPointStatic : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "HexPoint To String", CompactNodeTitle = "->", BlueprintAutocast), Category = "HexTools")
 	static FString Conv_HexToString(FHexPoint Hpoint);
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Index to HexPoint", CompactNodeTitle = "I2H"), Category = "HexTools")
+	static FHexPoint IndexToHex(int Index, int InSize) {
+		return { (Index % InSize), (Index / InSize) };
+	}
 	
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Hex to Index", CompactNodeTitle = "H2I"), Category = "HexTools")
+	static int HexToIndex(const FHexPoint& Index, int InSize) {
+		FIntPoint coord = Index.ToOffset();
+		return coord.X + coord.Y * InSize;
+	}
+
 	UFUNCTION(BlueprintPure, Category = "HexTools", meta = (DisplayName = "Print Adjacent Hex Coords"))
 	static FString PrintAdjacentTiles(FHexPoint Hpoint, int MapSize = 0);
 };

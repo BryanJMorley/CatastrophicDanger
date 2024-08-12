@@ -35,3 +35,10 @@ FString UHexPointStatic::PrintAdjacentTiles(FHexPoint Hpoint, int MapSize) {
 	}
 	return out;
 }
+
+FHexPoint::FHexPoint(FHexFrac Point)
+{
+	X = Point.X;
+	Y = Point.Y;
+	Z = Point.Z;
+}

@@ -70,6 +70,13 @@ TArray<int> UHexTool::TileNeighbors(const int& Index, int Size, bool IncludeSelf
     return intAdj;
 }
 
+FHexPoint UHexTool::HexLerp(const FHexPoint& A, const FHexPoint& B, float alpha)
+{
+    FHexFrac Af = A;
+    FHexFrac Bf = B;
+    return RoundToHex({ FMath::Lerp(Af.X, Bf.X, alpha), FMath::Lerp(Af.Y, B.Y, alpha), FMath::Lerp(Af.Z, Bf.Z, alpha) });
+}
+
 FHexPoint UHexTool::makeHexPoint(FVector Pos) {
     return FIntVector(Pos);
 }
