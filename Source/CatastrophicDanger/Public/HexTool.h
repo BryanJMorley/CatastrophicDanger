@@ -69,4 +69,39 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
     static FHexPoint HexLerp(const FHexPoint& A, const FHexPoint& B, float alpha);
 
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint HexMidpoint(const FHexPoint& A, const FHexPoint& B);
+
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
+    static void HexRayOrthogonal(const FHexPoint& Start, int direction, int distance, TArray<FHexPoint>& OutRay);
+
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
+    static void HexRay(const FHexPoint& Start, float direction, int distance, TArray<FHexPoint>& OutRay);
+
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
+    static void HexLine(const FHexPoint& Start, const FHexPoint& End, TArray<FHexPoint>& OutLine, int sizeCap = 0);
+
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
+    static void HexRandomWalk(const FHexPoint& Start, int distance, int direction, float randomness, float bias, TArray<FHexPoint>& OutPath);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static void HexSetToInt(const TSet<FHexPoint>& InHexes, int size, TSet<int>& OutSet);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static void HexArrayToInt(const TArray<FHexPoint>& InHexes, int size, TArray<int>& OutArray);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static void HexArrayToIntSet(const TArray<FHexPoint>& InHexes, int size, TSet<int>& OutSet);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static FHexPoint HexVecRotate(const FHexPoint& Vec, int dir);
+
+    UFUNCTION(BlueprintCallable, Category = "Math")
+    static void HexAllAdjacent(const TSet<FHexPoint>& InHexes, TSet<FHexPoint>& OutSet);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Math")
+    static inline int ModuloWrap(int a, int b) {
+        return (a % b + b) % b;
+    }
+
 };

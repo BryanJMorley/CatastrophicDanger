@@ -50,20 +50,3 @@ void UPathfinder::ReachableTiles(const FHexPoint& Start, int distance, const TSe
 		}
 	}
 }
-
-void UPathfinder::HexLine(const FHexPoint& Start, const FHexPoint& End, TArray<FHexPoint>& OutLine)
-{
-	float dist = UHexTool::HexDistance(Start, End);
-
-	for (int i = 0; i <= dist; i++) {
-		OutLine.Add(UHexTool::HexLerp(Start, End, i / dist));
-	}
-}
-
-void UPathfinder::HexSetToInt(const TSet<FHexPoint>& InHexes, int size, TSet<int>& OutSet)
-{
-	for (FHexPoint H : InHexes) {
-		OutSet.Add(UHexPointStatic::HexToIndex(H, size));
-	}
-	return;
-}
