@@ -36,12 +36,4 @@ public:
 	//FPath A_Star_Search_All(FHexPoint Start, FHexPoint Goal, int MapSize) {
 	//}
 
-	UFUNCTION(BlueprintCallable)
-	static void HexLine(const FHexPoint& Start, const FHexPoint& End, TArray<FHexPoint>& OutLine);
-
-	UFUNCTION(BlueprintCallable)
-	static void HexSetToInt(const TSet<FHexPoint>& InHexes, int size, TSet<int>& OutSet);
-
-
-
 };

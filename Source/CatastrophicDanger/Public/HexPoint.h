@@ -73,7 +73,7 @@ public:
 	}
 
 	FORCEINLINE FHexPoint HexDirection(int InDir) {
-		return HexAdjacent()[FMath::Modulo(InDir, 6)];
+		return HexAdjacent()[(InDir % 6 + 6) % 6]; //using positive define modulo function
 	}
 	
 	//returns an array of all the adjacent hex tiles, starting from the current hex, then NorthEast going CounterClockwise
