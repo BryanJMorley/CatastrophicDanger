@@ -10,13 +10,17 @@
 /**
  * 
  */
+DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(bool, FComparison, const FHexPoint&, Point);
+
 UCLASS()
 class CATASTROPHICDANGER_API UHexTool : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+	
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
     static FVector HexToPos(const FHexPoint& Coords, float Spacing, float Height = 0);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
@@ -81,27 +85,43 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexLine(const FHexPoint& Start, const FHexPoint& End, TArray<FHexPoint>& OutLine, int sizeCap = 0);
 
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools", meta = (input))
+    static void RemoveOutOfBounds(UPARAM(ref) TSet<FHexPoint>& InSet, int MapSize);
+
     UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexRandomWalk(const FHexPoint& Start, int distance, int direction, float randomness, float bias, TArray<FHexPoint>& OutPath);
 
-    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexSetToInt(const TSet<FHexPoint>& InHexes, int size, TSet<int>& OutSet);
 
-    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexArrayToInt(const TArray<FHexPoint>& InHexes, int size, TArray<int>& OutArray);
 
-    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexArrayToIntSet(const TArray<FHexPoint>& InHexes, int size, TSet<int>& OutSet);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
     static FHexPoint HexVecRotate(const FHexPoint& Vec, int dir);
 
-    UFUNCTION(BlueprintCallable, Category = "Math")
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexAllAdjacent(const TSet<FHexPoint>& InHexes, TSet<FHexPoint>& OutSet);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hex Tools")
+    static void HexAdjacent(const FHexPoint& InHex, TArray<FHexPoint>& OutNeighbors);
+
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
+    static void HexRadius(const FHexPoint& CentreHex, int radius, TArray<FHexPoint>& OutRadius);
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Math")
     static inline int ModuloWrap(int a, int b) {
         return (a % b + b) % b;
     }
+
+    UFUNCTION(BlueprintCallable)
+    static void FilterArrayByDelegate(FComparison Function, UPARAM(Ref) TArray<FHexPoint>& ToFilter, bool invert = false);
+
+    UFUNCTION(BlueprintCallable)
+    static void FilterSetByDelegate(FComparison Function, UPARAM(Ref) TSet<FHexPoint>& ToFilter, bool invert = false);
+
 
 };

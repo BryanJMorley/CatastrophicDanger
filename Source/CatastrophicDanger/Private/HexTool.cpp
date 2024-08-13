@@ -93,9 +93,9 @@ void UHexTool::HexRayOrthogonal(const FHexPoint& Start, int direction, int dista
 void UHexTool::HexRay(const FHexPoint& Start, float direction, int distance, TArray<FHexPoint>& OutRay)
 {
     FVector RayVec = { float(distance)*1.5, 0.0, 0.0 };
-    RayVec = RayVec.RotateAngleAxis(direction, { 0,0,1});
+    RayVec = RayVec.RotateAngleAxis(direction, {0,0,1});
     RayVec += HexToPos(Start, 1);
-    HexLine(Start, PosToHex({ RayVec.X, RayVec.Y }, 250), OutRay, distance);
+    HexLine(Start, PosToHex({ RayVec.X, RayVec.Y }, 1), OutRay, distance);
     
 }
 
@@ -131,6 +131,15 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
              OutLine.Add(HexLerp(End, Start, i / dist));
          }
      }
+ }
+
+ void UHexTool::RemoveOutOfBounds(TSet<FHexPoint>& InSet, int MapSize)
+ {
+     TSet<FHexPoint> OOB;
+     for (FHexPoint H : InSet) {
+         if (!HexInBounds(H, MapSize)) OOB.Add(H);
+     }
+     InSet = InSet.Difference(OOB);
  }
 
  void UHexTool::HexRandomWalk(const FHexPoint& Start, int distance, int direction, float randomness, float bias, TArray<FHexPoint>& OutPath)
@@ -197,4 +206,43 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
          OutSet.Append(H.HexAdjacent());
      }
      OutSet = OutSet.Difference(InHexes);
+ }
+
+ void UHexTool::HexAdjacent(const FHexPoint& InHex, TArray<FHexPoint>& OutNeighbors)
+ {
+     OutNeighbors = InHex.HexAdjacent();
+ }
+
+ void UHexTool::HexRadius(const FHexPoint& CentreHex, int radius, TArray<FHexPoint>& OutRadius)
+ {
+     if (radius == 1) {
+         OutRadius = CentreHex.HexRadius1();
+         return;
+     }
+     
+     for (int Q = -radius; Q <= radius; Q++) {
+         for (int R = FMath::Max(-radius, -Q - radius); R <= FMath::Max(radius, -Q + radius); R++) {
+             int S = -Q - R;
+             OutRadius.Add(CentreHex + FHexPoint(Q, R, S));
+         }
+     }
+ }
+
+ void UHexTool::FilterArrayByDelegate(FComparison Function, UPARAM(Ref) TArray<FHexPoint>& ToFilter, bool invert)
+ {
+     if (Function.IsBound()) {
+         for (FHexPoint H : ToFilter) {
+             if (XOR(Function.Execute(H), invert)) ToFilter.Remove(H);
+         }
+     }
+ }
+
+ void UHexTool::FilterSetByDelegate(FComparison Function, UPARAM(Ref)TSet<FHexPoint>& ToFilter, bool invert)
+ {
+     if (Function.IsBound()) {
+         for (FHexPoint H : ToFilter) {
+             if (XOR(Function.Execute(H), invert)) ToFilter.Remove(H);
+             
+         }
+     }
  }
