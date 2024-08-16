@@ -41,6 +41,8 @@ public:
 	static FHexPoint NearestPoint(const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap);
 
 
+
+
 	//FPath A_Star_Search_All(FHexPoint Start, FHexPoint Goal, int MapSize) {
 	//}
 
