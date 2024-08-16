@@ -22,10 +22,9 @@ public:
 	UPathfinder();
 	~UPathfinder();
 
-	inline float Heuristic(FHexPoint A, FHexPoint B) {
+	FORCEINLINE static float Heuristic(const FHexPoint& A, const FHexPoint& B) {
 		return UHexTool::HexDistance(A, B);
 	}
-
 
 	UFUNCTION(BlueprintCallable)
 	static void ReachableTilesAll(const FHexPoint& Start, int distance, int MapSize, TSet<FHexPoint>& OutSet);
@@ -33,6 +32,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static void ReachableTiles(const FHexPoint& Start, int distance, const TSet<FHexPoint>& InPathMap, TSet<FHexPoint>& OutSet);
 	
+	UFUNCTION(BlueprintCallable)
+	static void ShortestPath(const FHexPoint& Start, const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap, TArray<FHexPoint>& OutPath);
+
+	static void BackTracePath(const FHexPoint& Start, const FHexPoint& Goal, const TMap<FHexPoint, FHexPoint>& InCameFromMap, TArray<FHexPoint>& OutPath);
+
+	UFUNCTION(BlueprintCallable)
+	static FHexPoint NearestPoint(const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap);
+
+
 	//FPath A_Star_Search_All(FHexPoint Start, FHexPoint Goal, int MapSize) {
 	//}
 

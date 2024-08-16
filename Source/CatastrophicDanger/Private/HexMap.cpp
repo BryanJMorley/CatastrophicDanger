@@ -164,6 +164,7 @@ ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Te
 	}
 }
 
+
 #pragma endregion MapSetup
 
 #pragma region MapSpawning

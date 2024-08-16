@@ -221,7 +221,7 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
      }
      
      for (int Q = -radius; Q <= radius; Q++) {
-         for (int R = FMath::Max(-radius, -Q - radius); R <= FMath::Max(radius, -Q + radius); R++) {
+         for (int R = FMath::Max(-radius, -Q-radius); R <= FMath::Min(radius, -Q+radius); R++) {
              int S = -Q - R;
              OutRadius.Add(CentreHex + FHexPoint(Q, R, S));
          }

@@ -7,13 +7,13 @@
 template <typename InElementType>
 struct TPriorityQueueNode {
     InElementType Element;
-    float Priority;
+    int Priority;
 
     TPriorityQueueNode()
     {
     }
 
-    TPriorityQueueNode(InElementType InElement, float InPriority)
+    TPriorityQueueNode(InElementType InElement, int InPriority)
     {
         Element = InElement;
         Priority = InPriority;
@@ -49,7 +49,7 @@ public:
         return Node;
     }
 
-    void Push(InElementType Element, float Priority)
+    void Push(InElementType Element, int Priority)
     {
         Array.HeapPush(TPriorityQueueNode<InElementType>(Element, Priority));
     }
