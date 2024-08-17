@@ -51,7 +51,7 @@ void UPathfinder::ReachableTiles(const FHexPoint& Start, int distance, const TSe
 	}
 }
 
-void UPathfinder::ShortestPath(const FHexPoint& Start, const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap, TArray<FHexPoint>& OutPath)
+void UPathfinder::ShortestPath(const FHexPoint& Start, const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap, TArray<FHexPoint>& OutPath, bool RemoveStart)
 {
 	if (!InPathMap.Contains(Start)) return;
 	FHexPoint Target = Goal;
@@ -83,18 +83,18 @@ void UPathfinder::ShortestPath(const FHexPoint& Start, const FHexPoint& Goal, co
 
 		}
 	}
-	BackTracePath(Start, Target, CameFrom, OutPath);
+	BackTracePath(Start, Target, CameFrom, OutPath, RemoveStart);
 
 }
 
-void UPathfinder::BackTracePath(const FHexPoint& Start, const FHexPoint& Goal, const TMap<FHexPoint, FHexPoint>& InCameFromMap, TArray<FHexPoint>& OutPath)
+void UPathfinder::BackTracePath(const FHexPoint& Start, const FHexPoint& Goal, const TMap<FHexPoint, FHexPoint>& InCameFromMap, TArray<FHexPoint>& OutPath, bool RemoveStart)
 {
 	FHexPoint Current = Goal;
 	while (Current != Start) {
 		OutPath.Add(Current);
 		Current = InCameFromMap[Current];
 	}
-	OutPath.Add(Start);
+	if(!RemoveStart) OutPath.Add(Start);
 	std::reverse(std::begin(OutPath), std::end(OutPath));
 }
 

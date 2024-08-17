@@ -33,9 +33,9 @@ public:
 	static void ReachableTiles(const FHexPoint& Start, int distance, const TSet<FHexPoint>& InPathMap, TSet<FHexPoint>& OutSet);
 	
 	UFUNCTION(BlueprintCallable)
-	static void ShortestPath(const FHexPoint& Start, const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap, TArray<FHexPoint>& OutPath);
+	static void ShortestPath(const FHexPoint& Start, const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap, TArray<FHexPoint>& OutPath, bool RemoveStart = true);
 
-	static void BackTracePath(const FHexPoint& Start, const FHexPoint& Goal, const TMap<FHexPoint, FHexPoint>& InCameFromMap, TArray<FHexPoint>& OutPath);
+	static void BackTracePath(const FHexPoint& Start, const FHexPoint& Goal, const TMap<FHexPoint, FHexPoint>& InCameFromMap, TArray<FHexPoint>& OutPath, bool RemoveStart = true);
 
 	UFUNCTION(BlueprintCallable)
 	static FHexPoint NearestPoint(const FHexPoint& Goal, const TSet<FHexPoint>& InPathMap);
