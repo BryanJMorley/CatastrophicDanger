@@ -23,6 +23,12 @@ struct TPriorityQueueNode {
     {
         return Priority < Other.Priority;
     }
+
+    bool operator==(const TPriorityQueueNode<InElementType> Other) const
+    {
+        return Element == Other.Element;
+    }
+
 };
 
 template <typename InElementType>
@@ -57,6 +63,24 @@ public:
     bool IsEmpty() const
     {
         return Array.Num() == 0;
+    }
+
+    inline int Num() const
+    {
+        return Array.Num();
+    }
+
+    bool Contains(InElementType Element) const {
+        return Array.Contains(TPriorityQueueNode<InElementType>(Element, 0));
+    }
+
+    bool Remove(InElementType Element)
+    {
+        if (Array.Contains(TPriorityQueueNode<InElementType>(Element, 0))) {
+           Array.HeapRemoveAt(Array.Find(TPriorityQueueNode<InElementType>(Element, 0)));
+           return true;
+        }
+        return false;
     }
 
 private:

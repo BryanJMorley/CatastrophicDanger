@@ -26,8 +26,14 @@ void UFireSystem::Deinitialize()
 	UE_LOG(LogFire, Warning, TEXT("Fire System DeInitialised!"));
 }
 
-void UFireSystem::QueueTile(int Index) {
-	TileUpdateQ.Push(Index);
+void UFireSystem::QueueTile(int Index, int Priority, bool reverse) {
+	TileUpdateQ.Push({ Index, false }, Priority);
+	Map->ArQueued[Index] = true;
+}
+
+void UFireSystem::SetBatchSize(int BatchSize)
+{
+	ProcessCount = BatchSize;
 }
 
 float UFireSystem::CalculateFireDelta(const float& F, const float& H, const float& M) const
@@ -55,17 +61,25 @@ void UFireSystem::CacheTileDelta(const TArray<float, TFixedAllocator<7>>& InDelt
 	}
 }
 
+bool UFireSystem::RemoveFromQueue(int Index)
+{
+	if (TileUpdateQ.Remove(FQTile(Index, false))) {
+		return true;
+	}
+	return false;
+}
+
 void UFireSystem::Tick(float DeltaTime)
 {
 	if (Active) {
 		if (GEngine) {
 			GEngine->AddOnScreenDebugMessage(1, 1, FColor::Red, FString::Printf(TEXT("Fire Queue Size: %d tiles"), TileUpdateQ.Num()));
 		}
-		for (int i = 0; i < 3; i++) { //change this to make it process more tiles per tick. TODO: Come up with a more elegant soloution than this.
+		for (int i = 0; i < ProcessCount; i++) { //Process Count can be changed to allow batching for reaons. change this to make it process more tiles per tick. TODO: Come up with a more elegant soloution than this.
 			if (!TileUpdateQ.IsEmpty()) {
-				int Tile = TileUpdateQ.Pop();
-				UE_LOGFMT(LogFire, Display, "Processing Tile: {0}", Tile);
-				FireSpreadFunction(Tile, Map->ArFuel[Tile], Map->ArHeat[Tile], Map->ArMoisture[Tile]);
+				FQTile Tile = TileUpdateQ.Pop();
+				UE_LOGFMT(LogFire, Display, "Processing Tile: {0}", Tile.Index);
+				FireSpreadFunction(Tile.Index, Map->ArFuel[Tile.Index], Map->ArHeat[Tile.Index], Map->ArMoisture[Tile.Index], Tile.Reverse);
 			}
 			else {
 				if (GameState->TurnState == ETurnState::FIRE_THINKING) {
@@ -112,7 +126,7 @@ void UFireSystem::ApplyFireDelta()
 
 //calculate the fire spread for the given tile in the Queue, given its index and its Fhm values, 
 //then, save the Delta into the internal fire buffer.
-void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, const float& M)
+void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, const float& M, bool Reverse)
 {
 	if (F > 0) {
 		ETerrainType TerrainType = Map->ArTerrainType[Index];
@@ -135,9 +149,19 @@ void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, 
 			dHAdj[i] *= FireHeatScale;
 		}
 
-		CacheTileDelta(dHAdj, Index); //store the spread heat
-		ArFireBuffer[Index].X -= dF; //same for fuel
+		if (!Reverse) {
+			CacheTileDelta(dHAdj, Index); //store the spread heat
+			ArFireBuffer[Index].X -= dF; //same for fuel
+		}
+		else {
+			for (int i = 0; i < 7; i++) {
+				dHAdj[i] = -dHAdj[i]; //invert the fire function if we are reversing a tile.
+			}
+			CacheTileDelta(dHAdj, Index); 
+			ArFireBuffer[Index].X += dF;
+		}
 	}
+
 }
 
 void UFireSystem::IgnitionCheck(const int& Index)

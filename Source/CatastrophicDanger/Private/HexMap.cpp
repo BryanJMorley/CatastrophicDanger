@@ -47,7 +47,7 @@ void AHexMap::InitialiseGrids() {
 	ArFuel.Init(0, MapSize2);
 	ArHeat.Init(0, MapSize2);
 	ArMoisture.Init(0, MapSize2);
-	ArUpdate.Init(false, MapSize2);
+	ArQueued.Init(false, MapSize2);
 	ArElevation.Init(0, MapSize2);
 	ArTerrainType.Init(ETerrainType::NONE, MapSize2);
 	ArFireState.Init(EFireState::NONE, MapSize2);
@@ -292,25 +292,6 @@ FIntPoint AHexMap::Noise2DToIntArray(UFastNoiseWrapper* Noise, UPARAM(ref) TArra
 #pragma endregion Noise2Array
 
 #pragma region tileDataStructs
-//
-//FTileRef AHexMap::MakeTileRef(FHexPoint Index) {
-//	int i = HexToIndex(Index);
-//	FTileRef tile;
-//	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
-//	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
-//	tile.tile = ArTiles[i];
-//	tile.tileCoords = Index;
-//	return tile;
-//}
-//
-//FTileRef AHexMap::MakeTileRef(int i) {
-//	FTileRef tile;
-//	tile.terrainRef = FTerrainRef(ArTerrainType[i], ArElevation[i], ArGradient[i]);
-//	tile.fireRef = FFireRef(ArFuel[i], ArHeat[i], ArMoisture[i], ArUpdate[i], ArFireState[i]);
-//	tile.tile = ArTiles[i];
-//	tile.tileCoords = FHexPoint((i % MapSize), int(i / MapSize));
-//	return tile;
-//}
 
 #pragma endregion tileDataStructs
 
