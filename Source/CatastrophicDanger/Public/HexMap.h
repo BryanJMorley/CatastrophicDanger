@@ -60,7 +60,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
 	TArray<float> ArMoisture;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Tile Update"))
-	TArray<bool> ArUpdate;
+	TArray<bool> ArQueued;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Elevation"))
 	TArray<int> ArElevation;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Terrain Type"))

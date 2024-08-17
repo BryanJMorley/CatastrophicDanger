@@ -122,6 +122,4 @@ public:
 
     UFUNCTION(BlueprintCallable)
     static void FilterSetByDelegate(FComparison Function, UPARAM(Ref) TSet<FHexPoint>& ToFilter, bool invert = false);
-
-
 };

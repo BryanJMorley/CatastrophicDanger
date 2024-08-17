@@ -230,10 +230,15 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
 
  void UHexTool::FilterArrayByDelegate(FComparison Function, UPARAM(Ref) TArray<FHexPoint>& ToFilter, bool invert)
  {
+
      if (Function.IsBound()) {
-         for (FHexPoint H : ToFilter) {
-             if (XOR(Function.Execute(H), invert)) ToFilter.Remove(H);
-         }
+         /*for (FHexPoint H : ToFilter) {
+             if (Function.Execute(H) != invert) ToFilter.Remove(H);
+         }*/
+         ToFilter.RemoveAll([&Function, invert](FHexPoint H) {
+             if (Function.Execute(H) != invert) return true; //lambda to evaluate a delegate function lol.
+             return false;
+             });
      }
  }
 
@@ -241,8 +246,9 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
  {
      if (Function.IsBound()) {
          for (FHexPoint H : ToFilter) {
-             if (XOR(Function.Execute(H), invert)) ToFilter.Remove(H);
+             if (Function.Execute(H) != invert) ToFilter.Remove(H);
              
          }
      }
  }
+
