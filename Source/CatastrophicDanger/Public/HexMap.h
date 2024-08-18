@@ -55,6 +55,8 @@ public:
 	//Arrays to hold all the data. Structs are made to reference to it weakly, but it all stays here, which makes certain 
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Fuel"))
 	TArray<float> ArFuel;
+	TArray<float> ArStartFuel;
+
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Heat"))
 	TArray<float> ArHeat;
 	UPROPERTY(BlueprintReadWrite, Category = "Map Properties|Map Arrays", meta = (DisplayName = "Moisture"))
@@ -187,6 +189,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Map Setup")
 	ETerrainType TerrainTypeSelector(const float& SoilQual, const float& Temp, FVector2f RangeSoil, FVector2f RangeTemp) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Fire Sim")
+	void ClearUpdateState(bool Invert = false);
+
+	UFUNCTION(BlueprintCallable, Category = "Fire Sim")
+	void HeatLowerToAmbient(float percent);
 
 #pragma endregion Utilities
 

@@ -38,7 +38,8 @@ void UFireSystem::SetBatchSize(int BatchSize)
 
 float UFireSystem::CalculateFireDelta(const float& F, const float& H, const float& M) const
 {
-	return FMath::Min(FMath::Max(H - M, 0), F); //Delta Heat is how much heat exceeds moisture, capped by available fuel
+	//return FMath::Min(FMath::Max(H - M, 0), F);//Delta Heat is how much heat exceeds moisture, capped by available fuel
+	return FMath::Min(F, FMath::Lerp(0, H, FMath::Clamp(((H/M)-HeatLowThreshold)*(HeatHighThreshold/(1-HeatLowThreshold)), 0, 1)));
 }
 
 //takes in a Fixed 7 Array of ints and an index for the centre tile, then Applies the calculated delta to the adjacent tiles if valid.
@@ -116,8 +117,8 @@ void UFireSystem::ApplyFireDelta()
 			else {
 				MapH += H;
 			}
-			IgnitionCheck(i);
 		}
+		IgnitionCheck(i);
 	}
 	Map->TriggerTerrainUpdate();
 	ArFireBuffer.Empty();
@@ -152,6 +153,7 @@ void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, 
 		if (!Reverse) {
 			CacheTileDelta(dHAdj, Index); //store the spread heat
 			ArFireBuffer[Index].X -= dF; //same for fuel
+			
 		}
 		else {
 			for (int i = 0; i < 7; i++) {
@@ -159,6 +161,7 @@ void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, 
 			}
 			CacheTileDelta(dHAdj, Index); 
 			ArFireBuffer[Index].X += dF;
+			UE_LOG(LogFire, Display, TEXT("Reversing Tile"));
 		}
 	}
 
@@ -166,14 +169,26 @@ void UFireSystem::FireSpreadFunction(int Index, const float& F, const float& H, 
 
 void UFireSystem::IgnitionCheck(const int& Index)
 {
-	if (Map->ArHeat[Index] > (Map->ArMoisture[Index] * 2)) {
-		Map->ArFireState[Index] = EFireState::BURNING;
-	}
-	if (Map->ArFuel[Index] <= 0 ) {
-		Map->ArFireState[Index] = EFireState::BURNT;
-		Map->ArFuel[Index] = 0;
-	}
+	if (Map->ArFireState[Index] == EFireState::NONE) {
+		if (Map->ArHeat[Index] > (Map->ArMoisture[Index] * IgnitionMoistureCoef + Map->ArFuel[Index] * IgnitionFuelCoef + IgnitionOffset)) {
+			Map->ArFireState[Index] = EFireState::BURNING;
+			UE_LOG(LogFire, Display, TEXT("StartedBurning!"));
 
+		}
+	}
+	if (Map->ArFireState[Index] == EFireState::BURNING) {
+		if ((Map->ArHeat[Index]) < Map->ArMoisture[Index]) {
+			Map->ArFireState[Index] = EFireState::NONE;
+			UE_LOG(LogFire, Display, TEXT("Extinguished Fire!"));
+		}
+		else {
+			if (Map->ArFuel[Index] <= Map->ArStartFuel[Index] * BurntThreshold) {
+				Map->ArFireState[Index] = EFireState::BURNT;
+				Map->ArFuel[Index] = FMath::Max(0, Map->ArFuel[Index]);
+				UE_LOG(LogFire, Display, TEXT("Burnt Up!"));
+			}
+		}
+	}
 }
 
 void UFireSystem::FireUpdateComplete()

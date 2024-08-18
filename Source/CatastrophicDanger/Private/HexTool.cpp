@@ -228,6 +228,21 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
      }
  }
 
+ void UHexTool::HexCone(const FHexPoint& CentreHex, int radius, int direction, TArray<FHexPoint>& OutCone)
+ {
+     radius--;
+     if (radius <= 0) 
+     {
+         OutCone.Add(CentreHex);
+         return;
+     }
+     for (int i = 0; i <= radius; i++) {
+         for (int ii = 0; ii >= -radius; ii--) {
+             OutCone.Add(HexVecRotate({ i, ii, -i - ii }, direction) + CentreHex);
+         }
+     }
+ }
+
  void UHexTool::FilterArrayByDelegate(FComparison Function, UPARAM(Ref) TArray<FHexPoint>& ToFilter, bool invert)
  {
 
@@ -245,10 +260,10 @@ FHexPoint UHexTool::makeHexPoint(FVector Pos) {
  void UHexTool::FilterSetByDelegate(FComparison Function, UPARAM(Ref)TSet<FHexPoint>& ToFilter, bool invert)
  {
      if (Function.IsBound()) {
+         TSet<FHexPoint> Holder;
          for (FHexPoint H : ToFilter) {
-             if (Function.Execute(H) != invert) ToFilter.Remove(H);
-             
+             if (Function.Execute(H) != invert) Holder.Add(H);
          }
+         ToFilter = ToFilter.Difference(Holder);
      }
  }
-

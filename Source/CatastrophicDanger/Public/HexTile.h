@@ -24,7 +24,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
 	int tileIndex;
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Map Data")
 	EFireState fireState; //firestate for displayStuff, keep a copy indepent for synchronizing
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Map Data")

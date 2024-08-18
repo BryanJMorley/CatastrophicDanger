@@ -42,12 +42,11 @@ void AHexTile::OnTerrainUpdate(bool Transform, bool MapSetupTrigger) {
 
 	EFireState UpdatedFire = map->ArFireState[tileIndex];
 	if (UpdatedFire != fireState) {
-
 		if (UpdatedFire == EFireState::BURNING) {
 			fireState = UpdatedFire;
 			ReceiveStartBurning();
 		}
-		if (UpdatedFire == EFireState::BURNT) {
+		if ((UpdatedFire == EFireState::BURNT) || (UpdatedFire == EFireState::NONE)) {
 			fireState = UpdatedFire;
 			ReceiveStopBurning();
 		}

@@ -20,6 +20,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	int WindDir = 1;
 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float AmbientHeat = 1;
+
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	UDataTable* WindEffectTable = nullptr;
 

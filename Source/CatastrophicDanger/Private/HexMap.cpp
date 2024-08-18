@@ -45,6 +45,7 @@ void AHexMap::Tick(float DeltaTime)
 void AHexMap::InitialiseGrids() {
 	int MapSize2 = MapSize * MapSize;
 	ArFuel.Init(0, MapSize2);
+	ArStartFuel.Init(0, MapSize2);
 	ArHeat.Init(0, MapSize2);
 	ArMoisture.Init(0, MapSize2);
 	ArQueued.Init(false, MapSize2);
@@ -77,6 +78,7 @@ void AHexMap::FillFhmFromTerrainTable(UDataTable* InTable)
 				ArHeat[i] = FHM->Heat + FMath::Lerp(-FHM->HeatRange.X, FHM->HeatRange.Y, (1+FMath::PerlinNoise3D(coords + 1))/2.0f);
 				ArMoisture[i] = FHM->Moisture + FMath::Lerp(-FHM->MoistureRange.X, FHM->MoistureRange.Y, (1+FMath::PerlinNoise3D(coords + 2))/2.0f);*/
 				ArFuel[i] = FHM->Fuel + FMath::FRandRange(-FHM->FuelRange.X, FHM->FuelRange.Y);
+				ArStartFuel[i] = ArFuel[i];
 				ArHeat[i] = FHM->Heat + FMath::FRandRange(-FHM->HeatRange.X, FHM->HeatRange.Y);
 				ArMoisture[i] = FHM->Moisture + FMath::FRandRange(-FHM->MoistureRange.X, FHM->MoistureRange.Y);
 			}
@@ -120,7 +122,7 @@ void AHexMap::QueueBurningTiles()
 
 	for (int i = 0; i < MapSize * MapSize; i++) {
 		if (ArFireState[i] == EFireState::BURNING) {
-			FireSys->QueueTile(i);
+			FireSys->QueueTile(i, 99, false);
 		}
 	}
 }
@@ -161,6 +163,23 @@ ETerrainType AHexMap::TerrainTypeSelector(const float& SoilQual, const float& Te
 		else {
 			return ETerrainType::DRYFOREST;
 		}
+	}
+}
+
+void AHexMap::ClearUpdateState(bool Invert)
+{
+	for (int i = 0; i < ArQueued.Num(); i++) {
+		ArQueued[i] = Invert;
+	}
+}
+
+void AHexMap::HeatLowerToAmbient(float percent)
+{
+	UWeatherController* const Weather = (UWeatherController*)GetWorld()->GetSubsystem<UWeatherController>();
+
+	float Ambient = Weather->AmbientHeat;
+	for (int i = 0; i < ArHeat.Num(); i++) {
+		ArHeat[i] = FMath::Lerp(ArHeat[i], Ambient, percent);
 	}
 }
 

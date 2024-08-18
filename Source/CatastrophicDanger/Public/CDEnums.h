@@ -35,7 +35,7 @@ enum class ETerrainType : uint8
 	DRYFOREST	UMETA(DisplayName = "Dry Eucalypt Forest"),
 	WETFOREST	UMETA(DisplayName = "Wet Eucalypt Forest"),
 	PINEFOREST	UMETA(DisplayName = "Pine Forest"),
-	TOWN		UMETA(DisplayName = "Suburbs"),
+	TOWN		UMETA(DisplayName = "Road"),
 	RIVER		UMETA(DisplayName = "River"),
 };
 ENUM_RANGE_BY_COUNT(ETerrainType, ETerrainType::RIVER)
@@ -81,6 +81,7 @@ enum class ETurnState : uint8
 	PLAYER_TURN		UMETA(DisplayName = "PLAYER_TURN"),
 	FIRE_THINKING	UMETA(DisplayName = "FIRE_THINKING"),
 	FIRE_ANIM		UMETA(DisplayName = "FIRE_ANIM"),
+	FIRE_WAITING	UMETA(DisplayName = "FIRE_WAITING"),
 	TUTORIAL_TEXT	UMETA(DisplayName = "TUTORIAL_TEXT"),
 };
 

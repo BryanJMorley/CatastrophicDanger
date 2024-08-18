@@ -112,6 +112,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Hex Tools")
     static void HexRadius(const FHexPoint& CentreHex, int radius, TArray<FHexPoint>& OutRadius);
 
+    UFUNCTION(BlueprintCallable, Category = "Hex Tools")
+    static void HexCone(const FHexPoint& CentreHex, int radius, int direction, TArray<FHexPoint>& OutCone);
+
+
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Math")
     static inline int ModuloWrap(int a, int b) {
         return (a % b + b) % b;

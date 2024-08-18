@@ -70,12 +70,33 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	float FireHeatScale = 1;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float IgnitionOffset = 1;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float IgnitionMoistureCoef = 1;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float IgnitionFuelCoef = 0;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float BurntThreshold = 0.1;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float HeatLowThreshold = 0.5;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float HeatHighThreshold = 2;
 	
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	int ProcessCount = 3;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	int ProcessCountBase = 3;
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float baseHeat = 1;
 
 	UPROPERTY()
 	UWeatherController* WeatherSys = nullptr;
