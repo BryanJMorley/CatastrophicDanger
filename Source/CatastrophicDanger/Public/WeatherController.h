@@ -23,6 +23,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 	float AmbientHeat = 1;
 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+	float AmbientHeatBase = 1;
+
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	UDataTable* WindEffectTable = nullptr;
 
@@ -42,7 +45,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FWeatherUpdateSignature OnWeatherUpdateDelegate;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void WeatherUpdate();
 
 	UWeatherController();

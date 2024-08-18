@@ -7,8 +7,8 @@
 
 void UWeatherController::WeatherUpdate()
 {
-	WindStrength = FMath::Clamp(WindStrength+round(FMath::FRandRange(-1.0f, 1.0f)), 0, 3);
-	WindDir = FMath::Abs(FMath::Modulo(int(WindDir + round(FMath::FRandRange(-1.0f, 1.0f))), 6));
+	/*WindStrength = FMath::Clamp(WindStrength+round(FMath::FRandRange(-1.0f, 1.0f)), 0, 3);
+	WindDir = FMath::Abs(FMath::Modulo(int(WindDir + round(FMath::FRandRange(-1.0f, 1.0f))), 6));*/
 	UpdateWindEffectMaps();
 	OnWeatherUpdateDelegate.Broadcast();
 }

@@ -24,8 +24,5 @@ void ACDGameState::BeginPlay()
 	FireSys = GetWorld()->GetSubsystem<UFireSystem>();
 	FireSys->OnFireUpdateDelegate.AddDynamic(this, &ACDGameState::StartPlayerTurn);
 
-	WeatherSys = GetWorld()->GetSubsystem<UWeatherController>();
-	OnPlayerTurnStartDelegate.AddDynamic(WeatherSys, &UWeatherController::WeatherUpdate);
-
 	Super::BeginPlay();
 }
